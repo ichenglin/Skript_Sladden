@@ -1,0 +1,579 @@
+every 1 minute:
+	set {_randomNumber} to random integer between 1 and 5
+	if {_randomNumber} is 1:
+		set {_broadcastMessage} to "&eThere are a lot types of guns such as &6Assault Rifle&e, &6PDW&e, &6LMG&e, &6DMR&e, &6Shotgun &eand &6Sniper Rifle&e. Select your guns with the &6Gun Selector&e!"
+	else if {_randomNumber} is 2:
+		set {_broadcastMessage} to "&6Sniper Rifle &eand &6DMR &ehas aim scope, hold &aRight-Click &eto aim and &aLeft-Click &eto shoot."
+	else if {_randomNumber} is 3:
+		set {_broadcastMessage} to "&eFiring guns without &6Suppressor &ewill reveal your location to your enemy."
+	else if {_randomNumber} is 4:
+		set {_broadcastMessage} to "&eEvery gun's bullet has different piercing, if the bullet hits a player then the bullet will lost 1 piercing. Some bullets can hit enemy through wall, if the bullet went through a wall it will lost 2 piercing."
+	else if {_randomNumber} is 5:
+		set {_broadcastMessage} to "&eYou will receive credits for level up, you can use them to purchase guns and attachments in the gun selector menu."
+	send "&6[Auto Broadcast]: &f%{_broadcastMessage}%" to all players
+
+command /game [<text>] [<text>] [<text>]:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 or arg 2 or arg 3 is not set:
+			send "&cUsage: /game <data-id> <text|number> <value>" to executor
+			stop
+		if arg 2 is "text":
+			set {-gameData::%arg 1%} to arg 3
+		else if arg 2 is "number":
+			set {-gameData::%arg 1%} to ("%arg 3%" parsed as number)
+		else:
+			send "&cInvalid data value type." to executor
+			stop
+		send "&aSuccessfully set data &6%arg 1% &avalue to &6%{-gameData::%arg 1%}%&a!" to executor
+
+command /getGun [<text>]:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /getGun <gun>" to executor
+			stop
+		set {_gunID} to api_toUpperCase(arg 1)
+		replace all " " with "_" in {_gunID}
+		gunSelect_getGun(executor, "ALL", {_gunID}, (current hotbar slot of executor))
+
+command /giveExp [<player>] [<number>] [<text>]:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 or arg 2 is not set:
+			send "&cUsage: /giveExp <player> <amount> [reason]" to executor
+			stop
+		if arg 3 is set:
+			set {_reason} to arg 3
+		else:
+			set {_reason} to "Unknown"
+		guns_addExp(arg 1, arg 2, {_reason})
+		send "&aYou added &6%arg 2%&a exp into &6%arg 1%&a's account for &6%{_reason}%&a!" to executor
+
+command /setAmmo [<player>] [<number>]:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 or arg 2 is not set:
+			send "&cUsage: /setAmmo <player> <ammo>%nl%&c&lNote: &cThis command change target player's gun ammo. (Require target holding it)" to executor
+			stop
+		if arg 1 is not online:
+			send "&cPlayer is not online!" to executor
+			stop
+		set {_targetTool} to arg 1's tool
+		set {_ID} to "%arg 1%.%{_targetTool}'s name%"
+		set {-gunAmmo::%{_ID}%} to arg 2
+		send "&aYou set &6%arg 1%&a's &f%{_targetTool}'s name% &aammo amount to &6%arg 2%&a!" to executor
+
+command /gunSelector:
+	trigger:
+		gunSelect_new(executor)
+
+command /heal [<offline player>]:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /heal <player>" to executor
+			stop
+		if arg 1 is not online:
+			send "&cPlayer is not online!" to executor
+			stop
+		entity_heal(arg 1)
+
+on step on a pressure plate:
+	if {-gameData::status} is "STARTED":
+		stop
+	set {_detectionBlock} to block at location 2 meters below event-block's location
+	if {_detectionBlock} is red wool block:
+		gunSelect_getGun(player, "SNIPER_RIFLE", "BFG_50", 2)
+	else if {_detectionBlock} is orange wool block:
+		gunSelect_getGun(player, "SHOTGUN", "AA-12", 2)
+	else if {_detectionBlock} is yellow wool block:
+		gunSelect_getGun(player, "LMG", "M60", 2)
+	set current hotbar slot of player to 2
+	wait 2 ticks
+	guns_updateStats(player, (player's tool))
+
+on quit:
+	set quit message to "&7%player% &ehas left the game!"
+
+on script load:
+	kill all armor stands
+	loop all players:
+		game_newSidebar(loop-player)
+
+on place:
+	if player has permission "server.administrator":
+		stop
+	cancel event
+
+on break:
+	if player has permission "server.administrator":
+		stop
+	cancel event
+
+on chat:
+	if player has permission "server.administrator":
+		set {_namePrefix} to "&6[ᴀᴅᴍɪɴ] "
+	else:
+		set {_namePrefix} to ""
+	set {_teamColor} to entity_getTeamColor(player)
+	set chat format to "%{_namePrefix}%%{_teamColor}%%player%&6: &f%message%"
+
+on drop:
+	if player's gamemode is creative:
+		stop
+	cancel event
+
+on inventory click:
+	if player's gamemode is creative:
+		stop
+	cancel event
+
+command /reset-data [<offline player>] [<text>]:
+	trigger:
+		if executor is not a op:
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /reset-data <player> [DATA/GUNS/ALL]" to executor
+			stop
+		if arg 2 is set:
+			game_resetData(arg 1, arg 2)
+		else:
+			game_resetData(arg 1)
+		send "&aCleared user %arg 1%'s data!" to executor
+
+on script unload:
+	loop all players:
+		game_saveData(loop-player)
+
+on join:
+	set join message to "&7%player% &ahas joined the game!"
+	game_loadData(player)
+	wait 5 ticks
+	set current hotbar slot of player to 0
+	entity_heal(player)
+	game_newSidebar(player)
+	set {-lastTeleport::%player%} to random integer between 1 and 20
+	if {-gameData::status} is "STARTED":
+		game_addTeam(player)
+		guns_toSpawnpoint(player, {-lastTeleport::%player%})
+	else:
+		guns_toLobby(player)
+	set player's gamemode to adventure
+	guns_getInventory(player)
+	entity_updateTab(player)
+
+on quit:
+	game_saveData(player)
+
+on rightclick:
+	set {_tool} to player's tool
+	if {-playerLastShot::%player%} is set:
+		if (difference between {-playerLastClick::%player%} and now) <= ("0.3 seconds" parsed as time span):
+			stop
+	if {_tool} is clock:
+		gunSelect_new(player)
+	else if {_tool} is book:
+		open book {gameIntroductionBook} to player
+	else if {_tool} is not wooden hoe or stone hoe or iron hoe or golden hoe or diamond hoe or wooden pickaxe or stone pickaxe or iron pickaxe or golden pickaxe or golden pickaxe or wooden axe or stone axe or iron axe or golden axe or diamond axe or wooden shovel or stone shovel or iron shovel or golden shovel or diamond shovel:
+		stop
+	set {-playerLastClick::%player%} to now
+	if {_tool} is diamond hoe or iron hoe:
+		guns_holdRightMouse(player, {_tool})
+	else:
+		guns_shootWithStats(player, {_tool})
+
+on rightclick on entity:
+	set {_tool} to player's tool
+	if {-playerLastShot::%player%} is set:
+		if (difference between {-playerLastClick::%player%} and now) <= ("0.3 seconds" parsed as time span):
+			stop
+	if {_tool} is clock:
+		gunSelect_new(player)
+	else if {_tool} is book:
+		open book {gameIntroductionBook} to player
+	else if {_tool} is not wooden hoe or stone hoe or iron hoe or golden hoe or diamond hoe or wooden pickaxe or stone pickaxe or iron pickaxe or golden pickaxe or golden pickaxe or wooden axe or stone axe or iron axe or golden axe or diamond axe or wooden shovel or stone shovel or iron shovel or golden shovel or diamond shovel:
+		stop
+	set {-playerLastClick::%player%} to now
+	if {_tool} is diamond hoe or iron hoe:
+		guns_holdRightMouse(player, {_tool})
+	else:
+		guns_shootWithStats(player, {_tool})
+
+on tool change:
+	set {_tool} to player's tool
+
+	if {_tool} is not air:
+		if {_tool}'s name is not set:
+			guns_updateStats(player, air)
+			stop
+
+		if {_tool} is clock:
+			send "&eYou have selected the &6Gun Selector&e,%nl%&eright click while holding it to access the gun selector menu." to player
+		else:
+#			send "&aSelected weapon %{_tool}'s name%&a." to player
+			set {_weaponType} to guns_getGunType({_tool})
+			if {_weaponType} is "SNIPER_RIFLE" or "DMR":
+				send "&f&m------------------------------%nl%&e&eHold &aRight-Click &eto Aim,%nl%&aLeft-Click &ewhile aiming to fire.%nl%%nl%&e&lNOTE: &eYou can still fire without aiming%nl%but will decrease &aaccuracy &eand &adamage&e.%nl%&f&m------------------------------" to player
+		guns_updateStats(player, {_tool})
+	else:
+		if player's gamemode is creative:
+			stop
+		cancel event
+
+on swap hand items:
+	cancel event
+	set {_tool} to player's tool
+
+	if {_tool}'s name is not set:
+		stop
+
+	set {_weaponType} to guns_getGunType({_tool})
+	if {_weaponType} is set:
+		guns_reloadGun(player, {_tool})
+
+on hunger meter change:
+	cancel event
+
+on damage:
+	if victim is a armor stand:
+		if attacker's gamemode is creative:
+			kill victim
+	cancel event
+	set {_tool} to attacker's tool
+	if {_tool} is iron sword:
+		guns_melee(attacker, victim, (iron sword named "&aKnife"), 60)
+	else if {_tool} is diamond hoe or iron hoe:
+		guns_zoomShoot(attacker, {_tool})
+
+on leftclick:
+	set {_tool} to player's tool
+	if {_tool} is iron sword:
+#		guns_melee(player, (iron sword named "&aKnife"), 60, 10)
+	else if {_tool} is diamond hoe or iron hoe:
+		guns_zoomShoot(player, {_tool})
+
+every 1 second:
+	set {_soundLocation} to location at (0, 0, 0) in world("world")
+	if {-gameData::status} is not set:
+		game_lobbyData()
+	else if {-gameData::status} is "WAITING":
+		if (amount of all players) >= 2:
+			game_lobbyData()
+			set {-gameData::status} to "STARTING"
+	else if {-gameData::status} is "STARTING":
+		if (amount of all players) >= 2:
+			remove 1 from {-gameData::countdown}
+			if {-gameData::countdown} <= 0:
+				send "&eThe game has started!" to all players
+				play sound "entity.enderdragon.growl" with volume 99999 and pitch 1 at {_soundLocation} for all players
+				game_start()
+			else if {-gameData::countdown} is 20 or 15 or 10 or 5 or 4 or 3 or 2 or 1:
+				send "&eThe game is starting in &c%{-gameData::countdown}% &eseconds!" to all players
+				play sound "entity.experience_orb.pickup" with volume 99999 and pitch 1 at {_soundLocation} for all players
+		else:
+			send "&cNot enough players, start canceled!" to all players
+			game_lobbyData()
+	else if {-gameData::status} is "STARTED":
+		remove 1 from {-gameData::countdown}
+		if {-gameData::countdown} <= 0:
+			game_end()
+			game_lobbyData()
+	loop all players:
+		if {-showOnRadar::%loop-player%} is set:
+			if {-showOnRadar::%loop-player%} <= 0:
+				send action bar "&7" to loop-player
+				delete {-showOnRadar::%loop-player%}
+			else:
+				send action bar "&e&lON RADAR &f(Expire in %{-showOnRadar::%loop-player%}% seconds)" to loop-player
+				remove 1 from {-showOnRadar::%loop-player%}
+		if {-invincibleCountdown::%loop-player%} is set:
+			if {-invincibleCountdown::%loop-player%} <= 0:
+				send action bar "&7" to loop-player
+				delete {-invincibleCountdown::%loop-player%}
+			else:
+				send action bar "&c&lSPAWN PROTECTION &f(Expire in %{-invincibleCountdown::%loop-player%}% seconds)" to loop-player
+				remove 1 from {-invincibleCountdown::%loop-player%}
+		game_updateSidebar(loop-player)
+
+every 5 minutes:
+	send "&a[Server] Data saved for all players, the next auto save is in 5 minutes." to all players
+	loop all players:
+		game_saveData(loop-player)
+
+function game_start():
+	set {-gameData::status} to "STARTED"
+	set {-gameData::countdown} to (60 * 5) # Countdown: 5 minutes
+	set {-gameData::map} to "DEFAULT"
+	set {_randomMapNumber} to random integer between 1 and 2
+	if {_randomMapNumber} is 1:
+		set {-gameData::gamemode} to "TDM"
+	else if {_randomMapNumber} is 2:
+		set {-gameData::gamemode} to "FFA"
+	game_addTeamAll()
+	loop all players:
+		if {-lastTeleport::%loop-player%} is not set:
+			set {-lastTeleport::%loop-player%} to random integer between 1 and 20
+		else:
+			while (true):
+				set {_random} to random integer between 1 and 20
+				if {-lastTeleport::%loop-player%} is not {_random}:
+					set {-lastTeleport::%loop-player%} to {_random}
+					exit 1 loop
+		guns_toSpawnpoint(loop-player, {-lastTeleport::%loop-player%})
+		guns_getInventory(loop-player)
+		entity_updateTab(loop-player)
+	send "&eThe random selected gamemode for this round is &6%{-gameData::gamemode}%&e!" to all players
+
+function game_end():
+	if {-gameData::gamemode} is "FFA":
+		set {_winner} to game_getRoundMostKills()
+		if {_winner} is not set:
+			set {_title} to "&6&lSTALEMATE"
+		else:
+			set {_title} to "&a&l%{_winner}%"
+	else if {-gameData::redKills} is {-gameData::blueKills}:
+		set {_title} to "&6&lSTALEMATE"
+		set {_winTeam} to "NONE"
+	else if {-gameData::redKills} > {-gameData::blueKills}:
+		set {_title} to "&c&lRED TEAM"
+		set {_winTeam} to "RED"
+	else if {-gameData::redKills} < {-gameData::blueKills}:
+		set {_title} to "&9&lBLUE TEAM"
+		set {_winTeam} to "BLUE"
+	send "&cThe game has ended, %{_title}% &chas won!" to all players
+	if {-gameData::gamemode} is "FFA":
+		guns_addExp({_winner}, 400, "FFA Win")
+	else if {-gameData::gamemode} is "TDM":
+		loop all players:
+			if {-playerTeam::%loop-player%} is {_winTeam}:
+				guns_addExp(loop-player, 200, "TDM Win")
+	loop all players:
+		guns_toLobby(loop-player)
+
+function game_lobbyData():
+	game_deleteDataAll()
+	set {-gameData::status} to "WAITING"
+	set {-gameData::countdown} to 21 # Start game countdown: 20 seconds (1 second extra)
+	set {-gameData::gamemode} to "TDM"
+	set {-gameData::map} to "DEFAULT"
+	game_updateTabAll()
+	loop all players:
+		guns_getInventory(loop-player)
+		entity_heal(loop-player)
+
+function game_addTeamAll():
+	delete {-playerTeam::*}
+	set {_splitTeamToggle} to true
+	add all players to {_queuePlayers::*}
+	loop (amount of {_queuePlayers::*}) times:
+		set {_player} to random element out of {_queuePlayers::*}
+		if {_splitTeamToggle} is true:
+			set {-playerTeam::%{_player}%} to "RED"
+			set {_splitTeamToggle} to false
+		else:
+			set {-playerTeam::%{_player}%} to "BLUE"
+			set {_splitTeamToggle} to true
+		remove {_player} from {_queuePlayers::*}
+	game_updateTabAll()
+
+function game_addTeam(player: player):
+	set {_redPlayers} to 0
+	set {_bluePlayers} to 0
+	loop all players:
+		if loop-player is not {_player}:
+			if {-playerTeam::%loop-player%} is "RED":
+				add 1 to {_redPlayers}
+			else if {-playerTeam::%loop-player%} is "BLUE":
+				add 1 to {_bluePlayers}
+	if {_redPlayers} > {_bluePlayers}:
+		set {-playerTeam::%{_player}%} to "BLUE"
+	else if {_bluePlayers} > {_redPlayers}:
+		set {-playerTeam::%{_player}%} to "RED"
+	else:
+		set {-playerTeam::%{_player}%} to "RED"
+
+function game_deleteDataAll():
+	delete {-gameData::*}
+	delete {-playerTeam::*}
+	delete {-playerKills::*}
+	delete {-playerDeaths::*}
+	delete {-showOnRadar::*}
+	delete {-invincibleCountdown::*}
+	delete {-playerRoundKills::*}
+
+function game_updateTabAll():
+	loop all players:
+		entity_updateTab(loop-player)
+
+function game_newSidebar(player: player):
+	delete stylish scoreboard "sidebar-%{_player}%"
+	create stylish scoreboard named "sidebar-%{_player}%"
+	set title of stylish scoreboard "sidebar-%{_player}%" to "&6&lSLADDEN"
+	create a new id based score "sidebar-%{_player}%-line15" with text "&7%now%" slot 15 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line14" with text "&1" slot 14 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line13" with text "&e▍ Team: &fLoading..." slot 13 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line12" with text "&e▍ Countdown: &fLoading..." slot 12 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line11" with text "&d" slot 11 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line10" with text "&c▍ Red Kills: &fLoading..." slot 10 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line9" with text "&9▍ Blue Kills: &fLoading..." slot 9 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line8" with text "&7▍ &fLoading..." slot 8 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line7" with text "&4&7▍ &fLoading..." slot 7 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line6" with text "&0" slot 6 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line5" with text "&e▍ Level: &fLoading..." slot 5 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line4" with text "&e▍ &fLoading..." slot 4 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line3" with text "&e▍ Total Exp: &fLoading..." slot 3 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line2" with text "&e▍ Credits: &fLoading..." slot 2 for stylish scoreboard "sidebar-%{_player}%"
+	create a new id based score "sidebar-%{_player}%-line1" with text "&9" slot 1 for stylish scoreboard "sidebar-%{_player}%"
+	set {_player}'s stylish scoreboard to "sidebar-%{_player}%"
+
+function game_updateSidebar(player: player):
+	set text of id "sidebar-%{_player}%-line15" to "&7%now%"
+	if {-gameData::gamemode} is "FFA":
+		set {_teamDisplay} to "&aFFA"
+	else if {-playerTeam::%{_player}%} is "RED":
+		set {_teamDisplay} to "&cRed"
+	else if {-playerTeam::%{_player}%} is "BLUE":
+		set {_teamDisplay} to "&9Blue"
+	else:
+		set {_teamDisplay} to "&fLobby"
+	set text of id "sidebar-%{_player}%-line13" to "&e▍ Team: &f%{_teamDisplay}%"
+	set {_minutes} to floor({-gameData::countdown} / 60)
+	set {_seconds} to ({-gameData::countdown} - ({_minutes} * 60))
+	if {_minutes} < 10:
+		set {_minutesDisplay} to "0%{_minutes}%"
+	else:
+		set {_minutesDisplay} to "%{_minutes}%"
+	if {_seconds} < 10:
+		set {_secondsDisplay} to "0%{_seconds}%"
+	else:
+		set {_secondsDisplay} to "%{_seconds}%"
+	if {-gameData::status} is "WAITING":
+		set text of id "sidebar-%{_player}%-line12" to "&e▍ Waiting for players..."
+	else:
+		set text of id "sidebar-%{_player}%-line12" to "&e▍ Countdown: &f%{_minutesDisplay}%:%{_secondsDisplay}%"
+	if {-gameData::redKills} is not set:
+		set {-gameData::redKills} to 0
+	if {-gameData::blueKills} is not set:
+		set {-gameData::blueKills} to 0
+	if {-gameData::gamemode} is "TDM":
+		set text of id "sidebar-%{_player}%-line10" to "&c▍ Red Kills: &f%{-gameData::redKills}%"
+		set text of id "sidebar-%{_player}%-line9" to "&9▍ Blue Kills: &f%{-gameData::blueKills}%"
+	else if {-gameData::gamemode} is "FFA":
+		if {-playerRoundKills::%{_player}%} is not set:
+			set {_playerRoundKillsDisplay} to 0
+		else:
+			set {_playerRoundKillsDisplay} to {-playerRoundKills::%{_player}%}
+		set text of id "sidebar-%{_player}%-line10" to "&e▍ Round Kills: &f%{_playerRoundKillsDisplay}%"
+		set {_topKiller} to game_getRoundMostKills()
+		if {_topKiller} is not set:
+			set {_topKillerDisplay} to "None"
+			set {_topKills} to 0
+		else:
+			set {_topKillerDisplay} to "%{_topKiller}%"
+			set {_topKills} to {-playerRoundKills::%{_topKiller}%}
+		set text of id "sidebar-%{_player}%-line9" to "&e▍ ##1: &f%{_topKillerDisplay}% &e(&f%{_topKills}% Kills&e)"
+	if {-showOnRadar::%{_player}%} is set:
+		set {_radarDisplay} to "&eOn Radar &e(&f%({-showOnRadar::%{_player}%} + 1)%&e)"
+	else:
+		set {_radarDisplay} to ""
+	if {-invincibleCountdown::%{_player}%} is set:
+		set {_protectionDisplay} to "&cSpawn Protection &e(&f%({-invincibleCountdown::%{_player}%} + 1)%&e)"
+	else:
+		set {_protectionDisplay} to ""
+	set text of id "sidebar-%{_player}%-line8" to "&7▍ &f%{_radarDisplay}%"
+	set text of id "sidebar-%{_player}%-line7" to "&4&7▍ &f%{_protectionDisplay}%"
+	set {_requireExp} to (({-playerStatLevel::%{_player}%} * 150) + 200)
+	set text of id "sidebar-%{_player}%-line5" to "&e▍ Level: &f%{-playerStatLevel::%{_player}%}% &e(&f%api_getNumberDisplay({-playerStatExp::%{_player}%})% &e/ &f%api_getNumberDisplay({_requireExp})%&e)"
+	set text of id "sidebar-%{_player}%-line4" to "&e▍ %{-playerDisplayLevelProgress::%{_player}%}%"
+	set text of id "sidebar-%{_player}%-line3" to "&e▍ Total Exp: &f%{-playerDisplayExpTotal::%{_player}%}%"
+	set text of id "sidebar-%{_player}%-line2" to "&e▍ Credits: &f%{-playerDisplayCredit::%{_player}%}%"
+
+function game_updateDisplay(player: player):
+	set {-playerDisplayExpTotal::%{_player}%} to api_getNumberDecimalDisplay({-playerStatExpTotal::%{_player}%})
+	set {_requireExp} to (({-playerStatLevel::%{_player}%} * 150) + 200)
+	set {_percentage} to (({-playerStatExp::%{_player}%} / {_requireExp}) * 100)
+	set {_display} to ""
+	loop 10 times:
+		if {_percentage} >= 10:
+			set {_display} to "%{_display}%&a▖"
+			remove 10 from {_percentage}
+		else:
+			set {_display} to "%{_display}%&c▖"
+	set {-playerDisplayLevelProgress::%{_player}%} to "&e0 %{_display}% &e%api_getNumberDisplay({_requireExp})%"
+	set {-playerDisplayCredit::%{_player}%} to "%api_getNumberDecimalDisplay({-playerStatCredit::%{_player}%})%"
+
+function game_getRoundMostKills() :: player:
+	set {_topKills} to -1
+	loop {-playerRoundKills::*}:
+		if ("%loop-index%" parsed as player) is online:
+			if {-playerRoundKills::%loop-index%} > {_topKills}:
+				set {_topKills} to {-playerRoundKills::%loop-index%}
+				set {_topKillsPlayer} to ("%loop-index%" parsed as player)
+	return {_topKillsPlayer}
+
+function game_saveData(player: player):
+	if {-playerStatExpTotal::%{_player}%} is not set:
+		set {-playerStatExpTotal::%{_player}%} to 0
+	if {-playerStatCredit::%{_player}%} is not set:
+		set {-playerStatCredit::%{_player}%} to 0
+	set {_draft} to "%{_player}'s uuid%:%{-playerStatExpTotal::%{_player}%}%:%{-playerStatCredit::%{_player}%}%"
+	set {playerData::%{_player}%} to {_draft}
+	operator_sendDebug("Saved user %{_player}% (%{_player}'s uuid%) data: %{playerData::%{_player}%}%")
+
+function game_loadData(player: player):
+	set {_datas::*} to {playerData::%{_player}%} split by ":"
+	if {_datas::*} is set:
+		if {_datas::2} is set:
+			set {-playerStatExpTotal::%{_player}%} to ("%{_datas::2}%" parsed as number)
+			set {-playerStatExp::%{_player}%} to ("%{_datas::2}%" parsed as number)
+			set {-playerStatCredit::%{_player}%} to ("%{_datas::3}%" parsed as number)
+			set {-playerStatLevel::%{_player}%} to 0
+			while (true):
+				set {_requireExp} to (({-playerStatLevel::%{_player}%} * 150) + 200)
+				if {-playerStatExp::%{_player}%} >= {_requireExp}:
+					remove {_requireExp} from {-playerStatExp::%{_player}%}
+					if {-playerStatLevel::%{_player}%} is not set:
+						set {-playerStatLevel::%{_player}%} to 0
+					add 1 to {-playerStatLevel::%{_player}%}
+				else:
+					exit 1 loop
+			game_updateDisplay({_player})
+		operator_sendDebug("Loaded user %{_player}% (%{_player}'s uuid%) data: %{playerData::%{_player}%}%")
+		stop
+	set {-playerStatExpTotal::%{_player}%} to 0
+	set {-playerStatExp::%{_player}%} to 0
+	set {-playerStatLevel::%{_player}%} to 0
+	set {-playerStatCredit::%{_player}%} to 0
+	operator_sendDebug("Registered user %{_player}% (%{_player}'s uuid%) data: NEW")
+
+function game_resetData(player: player, type: text = "ALL"):
+	if {_type} is "DATA" or "ALL":
+		set {-playerStatExpTotal::%{_player}%} to 0
+		set {-playerStatExp::%{_player}%} to 0
+		set {-playerStatLevel::%{_player}%} to 0
+		set {-playerStatCredit::%{_player}%} to 0
+		set {_draft} to "%{_player}'s uuid%:%{-playerStatExpTotal::%{_player}%}%:%{-playerStatCredit::%{_player}%}%"
+		set {playerData::%{_player}%} to {_draft}
+		operator_sendDebug("Reset user %{_player}% (%{_player}'s uuid%) data: %{playerData::%{_player}%}%")
+	if {_type} is "GUNS" or "ALL":
+		loop {weaponUnlocked::*}:
+			if ":%loop-index%:" contains ":%{_player}'s uuid%.":
+				delete {weaponUnlocked::%loop-index%}
+	game_updateDisplay({_player})
+
+function game_resetDataAll():
+	kick all players due to "Data Resetting"
+	wait 5 ticks
+	delete {weaponUnlocked::*}
+	delete {playerData::*}

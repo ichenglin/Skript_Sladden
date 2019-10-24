@@ -1,0 +1,13 @@
+command /debug-toggle:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this!" to executor
+		if {-debugToggle::%executor%} is not set:
+			set {-debugToggle::%executor%} to true
+			send "&a[Debug] Enabled" to executor
+		else:
+			delete {-debugToggle::%executor%}
+			send "&c[Debug] Disabled" to executor
+
+function operator_sendDebug(message: text):
+	send "&c[Debug]: %{_message}%" to all players where [{-debugToggle::%player input%} is set]

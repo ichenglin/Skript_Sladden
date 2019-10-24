@@ -1,0 +1,21 @@
+command /tp [<player>] [<player>] [<text>]:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 3 is set:
+			if arg 1 is set:
+				set {_target} to arg 1
+			else:
+				set {_target} to executor
+			set {_coords::*} to arg 3 split by " "
+			set {_location} to location at (("%{_coords::1}%" parsed as number), ("%{_coords::2}%" parsed as number), ("%{_coords::3}%" parsed as number)) in world("%executor's world%")
+			hpBar_safeTeleport({_target}, {_location})
+			stop
+		if arg 1 and arg 2 is not set:
+			send "&cUsage: /tp <destination player> [player] OR /tp [player] <x> <y> <z>" to executor
+			stop
+		if arg 2 is set:
+			hpBar_safeTeleport(arg 1, (arg 2's location))
+		else:
+			hpBar_safeTeleport(executor, (arg 1's location))

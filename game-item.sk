@@ -1,0 +1,57 @@
+function item_getStat(item: item, statName: string) :: number:
+	
+	loop uncolored string_split({_item}'s lore, "||"):
+
+		if loop-value contains "&6": # Special Value
+			exit 1 loop
+		if loop-value contains "&7": # DESCRIPTION
+		else if loop-value contains "%{_statName}% ": # LONGER STAT NAME NOT ALLOWED
+		else if loop-value contains "%{_statName}%":
+			set {_dataRaw::*} to loop-value split by " "
+			replace all "+" with "" in {_dataRaw::1}
+			set {_finalData} to {_dataRaw::1}
+
+	if {_finalData} is not set:
+		return 0
+	else if {_finalData} contains "%%":
+		replace all "%%" with "" in {_finalData}
+		set {_percentageRaw} to ({_finalData} parsed as number)
+		return ({_percentageRaw} / 100)
+	else:
+		return ({_finalData} parsed as number)
+
+function item_getAttachmentStats(player: player, weapon: item) :: text:
+
+	set {_damageBonus} to 0
+	set {_accuracyBonus} to 0
+	set {_burstBonus} to 0
+	set {_piercingBonus} to 0
+	set {_ammoCapacityBonus} to 0
+
+	set {_attachmentFullID} to "%{_player}'s UUID%.%{_weapon}'s name%"
+	loop {-selectedAttachment::%{_attachmentFullID}%::*}:
+
+		set {_loopAttachment} to {-selectedAttachment::%{_attachmentFullID}%::%loop-index%}
+
+		add item_getStat({_loopAttachment}, "Damage Bonus") to {_damageBonus}
+		add item_getStat({_loopAttachment}, "Accuracy Bonus") to {_accuracyBonus}
+		add item_getStat({_loopAttachment}, "Projectile Burst Bonus") to {_burstBonus}
+		add item_getStat({_loopAttachment}, "Projectile Piercing Bonus") to {_piercingBonus}
+		add item_getStat({_loopAttachment}, "Ammo Capacity Bonus") to {_ammoCapacityBonus}
+
+	set {_output} to "%{_damageBonus}%:%{_accuracyBonus}%:%{_burstBonus}%:%{_piercingBonus}%:%{_ammoCapacityBonus}%"
+
+	return {_output}
+
+function item_hasSpecialStat(item: item, statName: string) :: boolean:
+	
+	loop string_split({_item}'s lore, "||"):
+
+		if loop-value contains "&6": # Special Value
+			if uncolored loop-value contains "%uncolored {_statName}%":
+				return true
+	return false
+
+function string_split(string: string, delimiter: string) :: strings:
+	set {_datas::*} to {_string} split by "%{_delimiter}%"
+	return {_datas::*}

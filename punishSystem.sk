@@ -1,0 +1,431 @@
+options:
+	announcePunishments: true
+	godModeUUIDs: "2bbd185f-8124-4339-b5ae-db9a4c614fd5" or "e1e67f93-3047-42b8-ad96-d94c04777e30"
+	noPermissionMessage: &cYou are not allowed to use this command!
+	defaultReason: The Ban Hammer has spoken!
+
+# NOTE: REQUIRE API
+# NOTE: REQUIRE API
+# NOTE: REQUIRE API
+
+command /tempban [<offline player>] [<time span> @] [<text>]:
+	trigger:
+		if executor is not a op:
+			send "{@noPermissionMessage}" to executor
+			stop
+		if arg 1 or arg 2 is not set:
+			send "&cUsage: /tempban <player> <time> @ [reason]" to executor
+			stop
+		if arg 1's uuid is {@godModeUUIDs}:
+			send "&cYou are not allowed to ban this player!" to executor
+			stop
+		if isPunished(arg 1's uuid, "BAN") is true:
+			set {_punishments::*} to getActivePunishments(arg 1's uuid, "BAN")
+			loop {_punishments::*}:
+				set {_id} to getData({_punishments::%loop-index%}, "id")
+				set {punishmentData::%{_id}%} to editData({punishmentData::%{_id}%}, 7, "TRUE")
+			send "&aPrevious ban removed for player &e%arg 1%&a." to executor
+		set {_player} to arg 1
+		set {_time} to arg 2
+		if arg 3 is set:
+			set {_reason} to arg 3
+		else:
+			set {_reason} to "{@defaultReason}"
+		set {_id} to getNewPunishmentID()
+		set {punishmentData::%{_id}%} to "%{_id}%:%{_player}'s uuid%:BAN:FALSE:%{_time}%:%{_reason}%:FALSE"
+		set {punishmentDate::%{_id}%} to now
+		blockPlayer({_player}, "BAN", {_reason}, false, {_time})
+		send "&aYou &eTEMPORARILY &a(&e%{_time}%&a) banned &e%{_player}% &afor: &e%{_reason}%" to executor
+		if {@announcePunishments} is true:
+			send "&e%executor% &ahas &eTEMPORARILY &a(&e%{_time}%&a) banned &e%{_player}% &afor: &e%{_reason}%" to all players
+
+command /ban [<offline player>] [<text>]:
+	trigger:
+		if executor is not a op:
+			send "{@noPermissionMessage}" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /ban <player> [reason]" to executor
+			stop
+		if arg 1's uuid is {@godModeUUIDs}:
+			send "&cYou are not allowed to ban this player!" to executor
+			stop
+		if arg 2 contains ":":
+			send "&cYou are not allowed to use "":"" in reason!" to executor
+			stop
+		if isPunished(arg 1's uuid, "BAN") is true:
+			set {_punishments::*} to getActivePunishments(arg 1's uuid, "BAN")
+			loop {_punishments::*}:
+				set {_id} to getData({_punishments::%loop-index%}, "id")
+				set {punishmentData::%{_id}%} to editData({punishmentData::%{_id}%}, 7, "TRUE")
+			send "&aPrevious ban removed for player &e%arg 1%&a." to executor
+		set {_player} to arg 1
+		set {_time} to ("0 seconds" parsed as time span)
+		if arg 2 is set:
+			set {_reason} to arg 2
+		else:
+			set {_reason} to "{@defaultReason}"
+		set {_id} to getNewPunishmentID()
+		set {punishmentData::%{_id}%} to "%{_id}%:%{_player}'s uuid%:BAN:TRUE:%{_time}%:%{_reason}%:FALSE"
+		set {punishmentDate::%{_id}%} to now
+		blockPlayer({_player}, "BAN", {_reason}, true, 0 seconds)
+		send "&aYou &ePERMANENTLY &abanned &e%{_player}% &afor: &e%{_reason}%" to executor
+		if {@announcePunishments} is true:
+			send "&e%executor% &ahas &ePERMANENTLY &abanned &e%{_player}% &afor: &e%{_reason}%" to all players
+
+command /mute [<offline player>] [<time span> @] [<text>]:
+	trigger:
+		if executor is not a op:
+			send "{@noPermissionMessage}" to executor
+			stop
+		if arg 1 or arg 2 is not set:
+			send "&cUsage: /mute <player> <time> @ [reason]" to executor
+			stop
+		if arg 1's uuid is {@godModeUUIDs}:
+			send "&cYou are not allowed to mute this player!" to executor
+			stop
+		if arg 3 contains ":":
+			send "&cYou are not allowed to use "":"" in reason!" to executor
+			stop
+		if isPunished(arg 1's uuid, "MUTE") is true:
+			set {_punishments::*} to getActivePunishments(arg 1's uuid, "MUTE")
+			loop {_punishments::*}:
+				set {_id} to getData({_punishments::%loop-index%}, "id")
+				set {punishmentData::%{_id}%} to editData({punishmentData::%{_id}%}, 7, "TRUE")
+			send "&aPrevious mute removed for player &e%arg 1%&a." to executor
+		set {_player} to arg 1
+		set {_time} to arg 2
+		if arg 3 is set:
+			set {_reason} to arg 3
+		else:
+			set {_reason} to "{@defaultReason}"
+		set {_id} to getNewPunishmentID()
+		set {punishmentData::%{_id}%} to "%{_id}%:%{_player}'s uuid%:MUTE:FALSE:%{_time}%:%{_reason}%:FALSE"
+		set {punishmentDate::%{_id}%} to now
+		send "&aYou &eTEMPORARILY &a(&e%{_time}%&a) muted &e%{_player}% &afor: &e%{_reason}%" to executor
+		send "&cYou are muted &e%{_time}% &cfor: &e%{_reason}%" to arg 1
+		if {@announcePunishments} is true:
+			send "&e%executor% &ahas muted &e%{_player}% &afor: &e%{_reason}%" to all players
+
+command /kick [<offline player>] [<text>]:
+	trigger:
+		if executor is not a op:
+			send "{@noPermissionMessage}" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /kick <player> [reason]" to executor
+			stop
+		if arg 1's uuid is {@godModeUUIDs}:
+			send "&cYou are not allowed to kick this player!" to executor
+			stop
+		if arg 2 contains ":":
+			send "&cYou are not allowed to use "":"" in reason!" to executor
+			stop
+		set {_player} to arg 1
+		set {_time} to 0 seconds
+		if arg 2 is set:
+			set {_reason} to arg 2
+		else:
+			set {_reason} to "{@defaultReason}"
+		set {_id} to getNewPunishmentID()
+		set {punishmentData::%{_id}%} to "%{_id}%:%{_player}'s uuid%:KICK:FALSE:%{_time}%:%{_reason}%:TRUE"
+		set {punishmentDate::%{_id}%} to now
+		send "&aYou kicked &e%{_player}% &afor: &e%{_reason}%" to executor
+		blockPlayer(arg 1, "KICK", {_reason}, false)
+		if {@announcePunishments} is true:
+			send "&e%executor% &ahas kicked &e%{_player}% &afor: &e%{_reason}%" to all players
+
+command /warn [<offline player>] [<text>]:
+	trigger:
+		if executor is not a op:
+			send "{@noPermissionMessage}" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /warn <player> [reason]" to executor
+			stop
+		if arg 2 contains ":":
+			send "&cYou are not allowed to use "":"" in reason!" to executor
+			stop
+		set {_player} to arg 1
+		set {_time} to 0 seconds
+		if arg 2 is set:
+			set {_reason} to arg 2
+		else:
+			set {_reason} to "{@defaultReason}"
+		set {_id} to getNewPunishmentID()
+		set {punishmentData::%{_id}%} to "%{_id}%:%{_player}'s uuid%:WARN:FALSE:%{_time}%:%{_reason}%:TRUE"
+		set {punishmentDate::%{_id}%} to now
+		send "&aYou warned &e%{_player}% &afor: &e%{_reason}%" to executor
+		send "%nl%%nl%&f▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃%nl%&cYou have been warned:%nl%&f%{_reason}%%nl%%nl%%nl%&f▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃" to arg 1
+		if {@announcePunishments} is true:
+			send "&e%executor% &ahas warned &e%{_player}% &afor: &e%{_reason}%" to all players
+
+command /unban [<offline player>]:
+	trigger:
+		if executor is not a op:
+			send "{@noPermissionMessage}" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /unban <player>" to executor
+			stop
+		set {_player} to arg 1
+		if isPunished(arg 1's uuid, "BAN") is false:
+			send "&cThe player is not banned!" to executor
+			stop
+		set {_punishments::*} to getActivePunishments({_player}'s uuid, "BAN")
+		loop {_punishments::*}:
+			set {_id} to getData({_punishments::%loop-index%}, "id")
+			set {punishmentData::%{_id}%} to editData({punishmentData::%{_id}%}, 7, "TRUE")
+		send "&aUnbanned player &e%{_player}%&a!" to executor
+		if {@announcePunishments} is true:
+			send "&e%executor% &aunbanned &e%{_player}%&a!" to all players
+
+command /unmute [<offline player>]:
+	trigger:
+		if executor is not a op:
+			send "{@noPermissionMessage}" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /unmute <player>" to executor
+			stop
+		set {_player} to arg 1
+		if isPunished(arg 1's uuid, "MUTE") is false:
+			send "&cThe player is not muted!" to executor
+			stop
+		set {_punishments::*} to getActivePunishments({_player}'s uuid, "MUTE")
+		loop {_punishments::*}:
+			set {_id} to getData({_punishments::%loop-index%}, "id")
+			set {punishmentData::%{_id}%} to editData({punishmentData::%{_id}%}, 7, "TRUE")
+		send "&aUnmuted player &e%{_player}%&a!" to executor
+		if {@announcePunishments} is true:
+			send "&e%executor% &aunmuted &e%{_player}%&a!" to all players
+
+command /history [<offline player>]:
+	trigger:
+		if executor is not a op:
+			send "{@noPermissionMessage}" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /history <player>" to executor
+			stop
+		removeExpired(arg 1's uuid)
+		send "&aHistory of player &e%arg 1%&a:" to executor
+		set {_uuid} to arg 1's uuid
+		loop {punishmentData::*}:
+			set {_data} to {punishmentData::%loop-index%}
+			if getData({_data}, "uuid") is {_uuid}:
+				if getData({_data}, "isPermanent") is "TRUE":
+					set {_time} to "&6(PERMANENT)"
+				else:
+					set {_time} to "&a(&e%getData({_data}, ""time"")%&a)"
+				if getData({_data}, "type") is "KICK" or "WARN":
+					send "&e[%{punishmentDate::%loop-index%}%] &a- &c[%getData({_data}, ""type"")%]&a: &e%getData({_data}, ""reason"")% &7[##%getData({_data}, ""id"")%]" to executor
+				else if getData({_data}, "isExpired") is "TRUE":
+					send "&e[%{punishmentDate::%loop-index%}%] &a- &c[%getData({_data}, ""type"")%]&a: &e%getData({_data}, ""reason"")% %{_time}% &7[##%getData({_data}, ""id"")%] &c[EXPIRED]" to executor
+				else:
+					send "&e[%{punishmentDate::%loop-index%}%] &a- &c[%getData({_data}, ""type"")%]&a: &e%getData({_data}, ""reason"")% %{_time}% &7[##%getData({_data}, ""id"")%]" to executor
+
+command /name-history [<offline player>]:
+	trigger:
+		if executor is not a op:
+			send "{@noPermissionMessage}" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /name-history <player>%nl%&c&lNOTE: &r&cPlayer's name history will still be checked even they never joined before!" to executor
+			stop
+		set {_nameDatas::*} to api_getPlayerName(arg 1's uuid, true)
+		if (amount of {_nameDatas::*}) = 0:
+			send "&cPlayer not found in Minecraft official database!" to executor
+			stop
+		set {_namesDisplay} to ""
+		loop {_nameDatas::*}:
+			if {_nameDatas::%loop-index%} contains ":":
+				set {_data::*} to {_nameDatas::%loop-index%} split by ":"
+				set {_date} to api_UnixToDate({_data::2})
+				set {_namesDisplay} to "%{_namesDisplay}%%nl%&a- &e%{_data::1}% &a(Changed to on &e%api_UnixToDate({_data::2} parsed as number / 1000)%&a)"
+			else:
+				set {_namesDisplay} to "%{_namesDisplay}%%nl%&a- &e%{_nameDatas::%loop-index%}%"
+		send "&aName history for player &e%arg 1% &a(&e%amount of {_nameDatas::*}%&a):%{_namesDisplay}%" to executor
+
+command /ip-history [<offline player>]:
+	trigger:
+		if executor is not a op:
+			send "{@noPermissionMessage}" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /ip-history <player>" to executor
+			stop
+		if {ipHistory::%arg 1's ip%} is not set:
+			send "&cNo history found for %arg 1%&c!" to executor
+			stop
+		set {_display} to getIpDisplay(arg 1's ip)
+		set {_uuids::*} to {ipHistory::%arg 1's ip%} split by ":"
+		send "&aScanning &e%arg 1% &aand players on IP &e%arg 1's ip% &a(&e%amount of {_uuids::*}%&a): &a[&cBanned&a] [&6Opped&a] [&7Other&a]%nl%%{_display}%" to executor
+
+command /check [<offline player>]:
+	trigger:
+		if executor is not a op:
+			send "{@noPermissionMessage}" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /check <player>" to executor
+			stop
+		send "&aStats for player &e%arg 1%&a:" to executor
+		if isPunished(arg 1's uuid, "BAN") is true:
+			send "&aBanned: &eTRUE" to executor
+		else:
+			send "&aBanned: &cFALSE" to executor
+		if isPunished(arg 1's uuid, "MUTE") is true:
+			send "&aMuted: &eTRUE" to executor
+		else:
+			send "&aMuted: &cFALSE" to executor
+		set {_display} to getIpDisplay(arg 1's ip)
+		set {_uuids::*} to {ipHistory::%arg 1's ip%} split by ":"
+		send "&aPlayers with same IP: &a(&e%amount of {_uuids::*}%&a):%nl%&a[&cBanned&a] [&6Opped&a] [&7Other&a]%nl%%{_display}%" to executor
+
+on connect:
+	removeExpired(player's uuid)
+	registerIP(player's uuid, player's ip)
+	if isPunished(player's uuid, "BAN") is true:
+		set {_punishments::*} to getActivePunishments(player's uuid, "BAN")
+		set {_data} to {_punishments::1}
+		if getData({_data}, "isPermanent") is "FALSE":
+			set {_time} to ("%getData({_data}, ""time"")%" parsed as time span)
+			set {_id} to getData({_data}, "id")
+			set {_date} to {punishmentDate::%{_id}%}
+			add {_time} to {_date}
+			set {_timeLeft} to difference between now and {_date}
+		else:
+			set {_timeLeft} to "PERMANENT"
+		kick the player due to "%nl%%nl%&f▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃%nl%&cYou are banned on this server:%nl%&f%getData({_data}, ""reason"")%%nl%%nl%&6Expires in: %{_timeLeft}%%nl%&f▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃"
+
+on chat:
+	removeExpired(player's uuid)
+	if isPunished(player's uuid, "MUTE") is true:
+		cancel event
+		set {_punishments::*} to getActivePunishments(player's uuid, "MUTE")
+		set {_data} to {_punishments::1}
+		if getData({_data}, "isPermanent") is "FALSE":
+			set {_time} to ("%getData({_data}, ""time"")%" parsed as time span)
+			set {_id} to getData({_data}, "id")
+			set {_date} to {punishmentDate::%{_id}%}
+			add {_time} to {_date}
+			set {_timeLeft} to difference between now and {_date}
+			send "&cYou are currently muted, it will expire in &e%{_timeLeft}%&c." to player
+		else:
+			send "&cYou are currently muted, it will expire in &ePERMANENT&c." to player
+
+function removePunishments():
+	delete {punishmentData::*}
+	delete {punishmentDate::*}
+
+function blockPlayer(player: player, type: text, reason: text, isPermanent: boolean, timeLeft: time span=0 seconds):
+	if {_type} is "BAN":
+		set {_message} to "You are banned on this server"
+	else if {_type} is "KICK":
+		set {_message} to "You are kicked from the server"
+	if {_isPermanent} is true:
+		set {_timeLeft} to "PERMANENT"
+	if {_type} is "KICK":
+		kick {_player} due to "%nl%%nl%&f▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃%nl%&c%{_message}%:%nl%&f%{_reason}%%nl%%nl%%nl%&f▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃"
+	else:
+		kick {_player} due to "%nl%%nl%&f▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃%nl%&c%{_message}%:%nl%&f%{_reason}%%nl%%nl%&6Expires in: %{_timeLeft}%%nl%&f▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃"
+
+function registerIP(uuid: text, ip: text):
+	if {ipHistory::%{_ip}%} is not set:
+		set {ipHistory::%{_ip}%} to "%{_uuid}%"
+	else:
+		set {_uuids::*} to {ipHistory::%{_ip}%} split by ":"
+		set {_recorded} to false
+		loop {_uuids::*}:
+			if {_uuids::%loop-index%} is "%{_uuid}%":
+				set {_recorded} to true
+		if {_recorded} is false:
+			set {ipHistory::%{_ip}%} to "%{ipHistory::%{_ip}%}%:%{_uuid}%"
+
+function editData(data: text, slot: number, text: text) :: text:
+	set {_datas::*} to {_data} split by ":"
+	set {_datas::%{_slot}%} to {_text}
+	loop {_datas::*}:
+		if {_final} is not set:
+			set {_final} to {_datas::%loop-index%}
+		else:
+			set {_final} to "%{_final}%:%{_datas::%loop-index%}%"
+	return {_final}
+
+function removeExpired(uuid: text):
+	set {_punishments::*} to getActivePunishments({_uuid}, "ALL")
+	loop {_punishments::*}:
+		set {_id} to getData({_punishments::%loop-index%}, "id")
+		set {_expireTime} to {punishmentDate::%{_id}%}
+		add ("%getData({punishmentData::%{_id}%}, ""time"")%" parsed as time span) to {_expireTime}
+		if now is greater than {_expireTime}:
+			set {punishmentData::%{_id}%} to editData({punishmentData::%{_id}%}, 7, "TRUE")
+
+function isPunished(uuid: text, type: text="ALL") :: boolean:
+	set {_punishments::*} to getActivePunishments({_uuid})
+	loop {_punishments::*}:
+		if {_type} is "ALL":
+			return true
+		else if getData({_punishments::%loop-index%}, "type") is {_type}:
+			return true
+	return false
+
+function getIpPlayers(ip: text) :: offline players:
+	set {_uuids::*} to {ipHistory::%{_ip}%} split by ":"
+	loop {_uuids::*}:
+		set {_nameHistory::*} to api_getPlayerName({_uuids::%loop-index%})
+		set {_amount} to amount of {_nameHistory::*}
+		add ("%{_nameHistory::%{_amount}%}%" parsed as offline player) to {_names::*}
+	return {_names::*}
+
+function getIpDisplay(ip: text) :: text:
+	set {_players::*} to getIpPlayers({_ip})
+	loop {_players::*}:
+		set {_player} to {_players::%loop-index%}
+		if isPunished({_player}'s uuid, "BAN") is true:
+			set {_display} to "&c%{_player}%"
+		else if {_player} is a op:
+			set {_display} to "&6%{_player}%"
+		else:
+			set {_display} to "&7%{_player}%"
+		add "%{_display}%" to {_displayPlayers::*}
+	set {_displayList} to "%{_displayPlayers::*}%"
+	replace all "," with "&a," in {_displayList}
+	replace all "and" with "&aand" in {_displayList}
+	return {_displayList}
+
+function getActivePunishments(uuid: text, type: text="ALL") :: texts:
+	loop {punishmentData::*}:
+		if getData({punishmentData::%loop-index%}, "uuid") is {_uuid}:
+			if getData({punishmentData::%loop-index%}, "isExpired") is "FALSE":
+				if {_type} is "ALL":
+					add {punishmentData::%loop-index%} to {_punishments::*}
+				else if getData({punishmentData::%loop-index%}, "type") is {_type}:
+					add {punishmentData::%loop-index%} to {_punishments::*}
+	return {_punishments::*}
+
+function getData(data: text, type: text) :: text:
+	set {_datas::*} to {_data} split by ":"
+	if {_type} is "id":
+		return {_datas::1}
+	else if {_type} is "uuid":
+		return {_datas::2}
+	else if {_type} is "type":
+		return {_datas::3}
+	else if {_type} is "isPermanent":
+		return {_datas::4}
+	else if {_type} is "time":
+		return {_datas::5}
+	else if {_type} is "reason":
+		return {_datas::6}
+	else if {_type} is "isExpired":
+		return {_datas::7}
+
+function getNewPunishmentID() :: text:
+	set {_toggleLoop} to true
+	while ({_toggleLoop}):
+		set {_id} to random integer between 100000 and 999999
+		if {punishmentData::%{_id}%} is not set:
+			set {_toggleLoop} to false
+	return "%{_id}%"

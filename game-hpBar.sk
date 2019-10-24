@@ -1,0 +1,93 @@
+on script load:
+	wait 5 ticks
+	kill all area effect clouds
+	wait 5 ticks 
+	hpBar_reload()
+
+on damage:
+	wait 3 ticks
+	hpBar_update(victim)
+
+on player respawn:
+	wait 5 ticks
+	hpBar_update(player)
+
+on join:
+	wait 5 ticks
+	hpBar_update(player)
+
+on quit:
+	hpBar_delete(player)
+
+on death:
+	wait 5 ticks
+	hpBar_delete(victim)	
+
+on spawn:
+	wait 5 ticks
+	hpBar_update(entity)
+
+every 1 minute:
+	hpBar_reload()
+
+function hpBar_safeTeleport(target: entity, location: location):
+	while (true):
+		hpBar_delete({_target})
+		wait 2 ticks
+		teleport {_target} to {_location}
+		wait 2 ticks
+		if (distance between {_location} and {_target}) <= 0.5:
+			exit 1 loop
+	hpBar_update({_target})
+
+function hpBar_update(entity: entity):
+	if {_entity} is not a player:
+		stop
+	if {_entity} is a player:
+		if {_entity} is not online:
+			stop
+	kill {entityHpBar::%{_entity}%}
+	kill {entityHpBarInfo::%{_entity}%}
+	set {_hpBars} to floor({-entityHealth::%{_entity}%} / 10)
+	set {_display} to ""
+	if {_hpBars} != 0:
+		loop {_hpBars} times:
+			set {_display} to "%{_display}%&a▊"
+	if {_hpBars} != 10:
+		loop (10 - {_hpBars}) times:
+			set {_display} to "%{_display}%&c▊"
+	spawn area effect cloud at location 300 meters above {_entity}'s location
+	add "{Radius:0.0f,CustomName:""%{_display}%"",CustomNameVisible:1b,Duration:99999,Particle:take}" to last spawned entity's nbt
+	set {entityHpBar::%{_entity}%} to last spawned entity
+	make {entityHpBar::%{_entity}%} ride {_entity}
+	if {_entity} is a player:
+		set {_target} to "%{_entity}%"
+#	else:
+#		set {_target} to string_capitalize("%{_entity}%")
+# REMOVED DUE TO ONLY PLAYER ALLOWED HERE
+	spawn area effect cloud at location 300 meters above {_entity}'s location
+	add "{Radius:0.0f,CustomName:""&6&l%{_target}% - %{-entityHealth::%{_entity}%}%%%"",CustomNameVisible:1b,Duration:99999,Particle:take}" to last spawned entity's nbt
+	make last spawned entity ride {entityHpBar::%{_entity}%}
+	set {entityHpBarInfo::%{_entity}%} to last spawned entity
+
+function hpBar_delete(entity: entity):
+	kill {entityHpBar::%{_entity}%}
+	kill {entityHpBarInfo::%{_entity}%}
+	delete {entityHpBar::%{_entity}%}
+	delete {entityHpBarInfo::%{_entity}%}
+
+function hpBar_deleteAll():
+	loop {entityHpBar::*}:
+		kill {entityHpBar::%loop-index%}
+		kill {entityHpBarInfo::%loop-index%}
+	delete {entityHpBar::*}
+	delete {entityHpInfo::*}
+
+function hpBar_addAll():
+	loop all entities:
+		hpBar_update(loop-entity)
+
+function hpBar_reload():
+	hpBar_deleteAll()
+	wait 5 ticks
+	hpBar_addAll()

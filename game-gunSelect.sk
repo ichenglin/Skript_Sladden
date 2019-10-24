@@ -1,0 +1,309 @@
+function gunSelect_addDataGun(type: text, unlockLevel: number, item: item):
+	add {_item} to {-guns_%{_type}%::*}
+	set {_selectID} to uncolored ({_item}'s name)
+	set {_selectID} to api_toUpperCase({_selectID})
+	replace all " " with "_" in {_selectID}
+	set {-gunUnlocklevel::%{_selectID}%} to {_unlockLevel}
+
+function gunSelect_addDataAttachment(attachmentType: text, forGunType: text, item: item):
+	add {_item} to {-gunAttachmentList_%{_attachmentType}%::*}
+	set {_itemName} to {_item}'s name
+	set {-gunAttachmentGunList::%{_itemName}%} to {_forGunType}
+
+function gunSelect_new(player: player):
+	gunSelect_open({_player}, "PRIMARY", "ASSAULT_RIFLE")
+
+function gunSelect_open(player: player, type: text = "PRIMARY", type2: text = "UNKNOWN"):
+	if {_type2} is "UNKNOWN":
+		if {_type} is "PRIMARY":
+			set {_type2} to "ASSAULT_RIFLE"
+		else if {_type} is "SECONDARY":
+			set {_type2} to "PISTOL"
+	operator_sendDebug("Access Selector: %{_type}% -> %{_type2}%")
+	set {_selectID} to uncolored {_type2}
+	set {_selectID} to api_toUpperCase({_selectID})
+	replace all " " with "_" in {_selectID}
+	set {-playerSelectType1::%{_player}%} to {_type}
+	set {-playerSelectType2::%{_player}%} to {_selectID}
+	open chest with 5 row named "&cSelect Gun" to {_player}
+	gunSelect_addType({_player}, 36, "PRIMARY")
+	gunSelect_addType({_player}, 37, "SECONDARY")
+	format a gui slot 38 of {_player} with stained glass:0 named "&7" with lore "" to do nothing
+	if {_type} is "PRIMARY":
+		gunSelect_addSelector({_player}, 39, "&aAssault Rifle", {_type})
+		gunSelect_addSelector({_player}, 40, "&aPDW", {_type})
+		gunSelect_addSelector({_player}, 41, "&aLMG", {_type})
+		gunSelect_addSelector({_player}, 42, "&aDMR", {_type})
+		gunSelect_addSelector({_player}, 43, "&aShotgun", {_type})
+		gunSelect_addSelector({_player}, 44, "&aSniper Rifle", {_type})
+	else if {_type} is "SECONDARY":
+		gunSelect_addSelector({_player}, 39, "&aPistol", {_type})
+		gunSelect_addSelector({_player}, 40, "&aMachine Pistol", {_type})
+		gunSelect_addSelector({_player}, 41, "&aRevolver", {_type})
+		gunSelect_addSelector({_player}, 42, "&aOther", {_type})
+	set {_slot} to 0
+	loop 9 times:
+		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
+		add 1 to {_slot}
+	set {_slot} to 27
+	loop 9 times:
+		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
+		add 1 to {_slot}
+	set {_slot} to 9
+	set {_gunList::*} to {-guns_%{_selectID}%::*}
+	loop {_gunList::*}:
+		gunSelect_addGun({_player}, {_slot}, {-guns_%{_selectID}%::%loop-index%}, {_type}, {_selectID})
+		add 1 to {_slot}
+
+function gunSelect_openAttachments(player: player, item: item, attachmentType: text = "OTHER"):
+	set {-playerAttachmentSelect::%{_player}%} to {_attachmentType}
+	open chest with 5 row named "&cEdit Attachments: %{_item}'s name%" to {_player}
+	set {_slot} to 0
+	loop 9 times:
+		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
+		add 1 to {_slot}
+	set {_slot} to 27
+	loop 9 times:
+		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
+		add 1 to {_slot}
+#	gunSelect_addAttachmentSelector({_player}, {_item}, 36, "&aOptic")
+#	gunSelect_addAttachmentSelector({_player}, {_item}, 37, "&aBarrel")
+#	gunSelect_addAttachmentSelector({_player}, {_item}, 38, "&aUnderbarrel")
+#	gunSelect_addAttachmentSelector({_player}, {_item}, 39, "&aOther")
+	gunSelect_addAttachmentSelector({_player}, {_item}, 36, "&aBarrel")
+	gunSelect_addAttachmentSelector({_player}, {_item}, 37, "&aUnderbarrel")
+	gunSelect_addAttachmentSelector({_player}, {_item}, 38, "&aOther")
+	format a gui slot 9 of {_player} with stained glass:4 named "&aDefault" with lore "" to close then run function gunSelect_selectAttachmentDefault({_player}, {_item}, {_attachmentType})
+	set {_attachmentSlot} to 10
+	loop {-gunAttachmentList_%{_attachmentType}%::*}:
+		set {_attachment} to {-gunAttachmentList_%{_attachmentType}%::%loop-index%}
+		set {_attachmentName} to {_attachment}'s name
+		set {_forGunType} to {-gunAttachmentGunList::%{_attachmentName}%}
+		gunSelect_addAttachment({_player}, {_attachmentSlot}, {_attachment}, {_item}, {_forGunType}, {_attachmentType})
+		add 1 to {_attachmentSlot}
+
+function gunSelect_addType(player: player, slot: number, type: text):
+	if {_type} is "PRIMARY":
+		set {_display} to "&aPrimary Weapons"
+	else if {_type} is "SECONDARY":
+		set {_display} to "&aSecondary Weapons"
+	if {-playerSelectType1::%{_player}%} is {_type}:
+		format a gui slot {_slot} of {_player} with stained clay:5 named "%{_display}%" with lore "&aSELECTED" to do nothing
+	else:
+		format a gui slot {_slot} of {_player} with stained clay:14 named "%{_display}%" with lore "&eClick to select" to close then run function gunSelect_selectType({_player}, {_type})
+
+function gunSelect_addSelector(player: player, slot: number, itemName: text, type: text):
+	if {-playerSelectType1::%{_player}%} is not {_type}:
+		stop
+	set {_selectID} to uncolored {_itemName}
+	set {_selectID} to api_toUpperCase({_selectID})
+	replace all " " with "_" in {_selectID}
+	if {-playerSelectType2::%{_player}%} is {_selectID}:
+		format a gui slot {_slot} of {_player} with stained clay:5 named "%{_itemName}%" with lore "&aSELECTED" to do nothing
+	else:
+		format a gui slot {_slot} of {_player} with stained clay:14 named "%{_itemName}%" with lore "&eClick to select" to close then run function gunSelect_open({_player}, {_type}, {_selectID})
+
+function gunSelect_addAttachmentSelector(player: player, item: item, slot: number, selectorName: text):
+	set {_selectID} to uncolored {_selectorName}
+	set {_selectID} to api_toUpperCase({_selectID})
+	replace all " " with "_" in {_selectID}
+	if {-playerAttachmentSelect::%{_player}%} is {_selectID}:
+		format a gui slot {_slot} of {_player} with stained clay:5 named "%{_selectorName}%" with lore "&aSELECTED" to do nothing
+	else:
+		format a gui slot {_slot} of {_player} with stained clay:14 named "%{_selectorName}%" with lore "&eClick to select" to close then run function gunSelect_openAttachments({_player}, {_item}, {_selectID})
+
+function gunSelect_addGun(player: player, slot: number, item: item, type: text, type2: text):
+	set {_selectID} to uncolored {_type2}
+	set {_selectID} to api_toUpperCase({_selectID})
+	replace all " " with "_" in {_selectID}
+	set {_gunID} to uncolored {_item}'s name
+	set {_gunID} to api_toUpperCase({_gunID})
+	replace all " " with "_" in {_gunID}
+	set {_itemDisplayName} to "%{_item}'s name% &e(Level %{-gunUnlocklevel::%{_gunID}%}%)"
+	set {_requireCredits} to ((({-gunUnlocklevel::%{_gunID}%} - {-playerStatLevel::%{_player}%}) * 140) + 700)
+	set {_itemDisplayLoreLocked} to "&cLOCKED||&cUnlock with &6level %{-gunUnlocklevel::%{_gunID}%}% &cor &6%{_requireCredits}% credits||&eClick to purchase with credits||||%{_item}'s lore%"
+	set {_itemDisplayLoreUnlocked} to "&eLeft-Click to Select||&eRight-Click to Edit Attachments||||%{_item}'s lore%"
+	set {_itemDisplayLoreSelected} to "&aSELECTED||&eRight-Click to Edit Attachments||||%{_item}'s lore%"
+	if {-gunUnlocklevel::%{_gunID}%} > {-playerStatLevel::%{_player}%}:
+		if {weaponUnlocked::%{_player}%.%{_gunID}%} is not set:
+			set {_weaponLocked} to true
+	set {_weaponItem} to {_item}
+	if {_weaponLocked} is true:
+		set {_weaponItem} to stained glass:14 named "&cError" with lore "&cAn error has occured,||&cplease report this to an administrator!"
+	set {_weaponItem} to {_weaponItem} named {_itemDisplayName}
+	if {_type} is "PRIMARY":
+		set {_selectedGun} to {-playerSelectType3::%{_player}%}
+	else if {_type} is "SECONDARY":
+		set {_selectedGun} to {-playerSelectType4::%{_player}%}
+	if {_weaponLocked} is true:
+		set {_weaponItem} to {_weaponItem} with lore {_itemDisplayLoreLocked}
+	else if {_selectedGun} is {_gunID}:
+		set {_weaponItem} to glowing {_weaponItem} with lore {_itemDisplayLoreSelected}
+		set {_weaponSelected} to true
+	else:
+		set {_weaponItem} to {_weaponItem} with lore {_itemDisplayLoreUnlocked}
+	if {_weaponLocked} is true:
+		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_buyGunRequest({_player}, {_item}, {_gunID})
+	else if {_weaponSelected} is true:
+		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_openAttachments({_player}, {_item}) with "right" click
+	else:
+		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_selectGun({_player}, {_type}, {_selectID}, {_gunID}) with "left" click
+		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_openAttachments({_player}, {_item}) with "right" click
+
+function gunSelect_addAttachment(player: player, slot: number, item: item, currentSelectedGun: item, forGunType: text, attachmentType: text):
+	set {_weaponType} to guns_getGunType({_currentSelectedGun})
+	set {_weaponLore} to {_item}'s lore
+	if {_forGunType} is "ALL":
+		set {_weaponLore} to "&f||%{_weaponLore}%"
+		set {_access} to true
+	else if {_weaponType} is {_forGunType}:
+		set {_weaponLore} to "&f||%{_weaponLore}%"
+		set {_access} to true
+	else:
+		set {_weaponLore} to "&f||&cThis attachment is not available for %{_currentSelectedGun}'s name%&c!||&f||%{_weaponLore}%"
+		set {_access} to false
+	set {_attachmentFullID} to "%{_player}'s UUID%.%{_currentSelectedGun}'s name%"
+	loop {-selectedAttachment::%{_attachmentFullID}%::*}:
+		if {-selectedAttachment::%{_attachmentFullID}%::%loop-index%} is {_item}:
+			set {_weaponLore} to "&aSELECTED%{_weaponLore}%"
+			set {_selected} to true
+
+	set {_displayItem} to {_item} with lore {_weaponLore}
+	if {_access} is true:
+		if {_selected} is true:
+			format a gui slot {_slot} of {_player} with glowing {_displayItem} to close then run function gunSelect_selectAttachment({_player}, {_currentSelectedGun}, {_item}, {_attachmentType})
+		else:
+			format a gui slot {_slot} of {_player} with {_displayItem} to close then run function gunSelect_selectAttachment({_player}, {_currentSelectedGun}, {_item}, {_attachmentType})
+	else:
+		format a gui slot {_slot} of {_player} with {_displayItem} to do nothing
+
+function gunSelect_selectAttachment(player: player, weapon: item, attachment: item, attachmentType: text):
+	if {_attachmentType} is "OPTIC":
+		set {_attachmentTypeID} to 1
+	else if {_attachmentType} is "BARREL":
+		set {_attachmentTypeID} to 2
+	else if {_attachmentType} is "UNDERBARREL":
+		set {_attachmentTypeID} to 3
+	else if {_attachmentType} is "OTHER":
+		set {_attachmentTypeID} to 4
+	set {_attachmentFullID} to "%{_player}'s UUID%.%{_weapon}'s name%"
+	set {-selectedAttachment::%{_attachmentFullID}%::%{_attachmentTypeID}%} to {_attachment}
+	send "&eSelected attachment &a%uncolored {_attachment}'s name% &efor &a%uncolored {_weapon}'s name%&e!" to {_player}
+	gunSelect_openAttachments({_player}, {_weapon}, {_attachmentType})
+
+function gunSelect_selectAttachmentDefault(player: player, weapon: item, attachmentType: text):
+	if {_attachmentType} is "OPTIC":
+		set {_attachmentTypeID} to 1
+	else if {_attachmentType} is "BARREL":
+		set {_attachmentTypeID} to 2
+	else if {_attachmentType} is "UNDERBARREL":
+		set {_attachmentTypeID} to 3
+	else if {_attachmentType} is "OTHER":
+		set {_attachmentTypeID} to 4
+	set {_attachmentFullID} to "%{_player}'s UUID%.%{_weapon}'s name%"
+	delete {-selectedAttachment::%{_attachmentFullID}%::%{_attachmentTypeID}%}
+	send "&eSelected attachment &aDefault &efor &a%uncolored {_weapon}'s name%&e!" to {_player}
+	gunSelect_openAttachments({_player}, {_weapon}, {_attachmentType})
+
+function gunSelect_buyGunRequest(player: player, shopItem: item, gunID: text):
+	set {_requireCredits} to ((({-gunUnlocklevel::%{_gunID}%} - {-playerStatLevel::%{_player}%}) * 140) + 700)
+	open chest with 5 row named "&cConfirm purchase: %{_shopItem}'s name% &c(%{_requireCredits}% Credits)" to {_player}
+	format a gui slot 13 of {_player} with {_shopItem} to do nothing
+	format a gui slot 29 of {_player} with stained clay:5 named "&aPurchase" with lore "&eClick to confirm the purchase!" to close then run function gunSelect_buyGun({_player}, {_shopItem}, {_gunID})
+	format a gui slot 33 of {_player} with stained clay:14 named "&cCancel" with lore "&eClick to cancel the purchase!" to close then run function gunSelect_cancelPurchase({_player})
+
+function gunSelect_buyGun(player: player, shopItem: item, gunID: text):
+	set {_requireCredits} to ((({-gunUnlocklevel::%{_gunID}%} - {-playerStatLevel::%{_player}%}) * 140) + 700)
+	if {_requireCredits} <= {-playerStatCredit::%{_player}%}:
+		remove {_requireCredits} from {-playerStatCredit::%{_player}%}
+		send "&aYou have successfully purchased %{_shopItem}'s name%&a!" to {_player}
+		send "&c-%{_requireCredits}% Credits (Shop)" to {_player}
+		set {weaponUnlocked::%{_player}%.%{_gunID}%} to now
+		game_updateDisplay({_player})
+		stop
+	send "&cYou need %({_requireCredits} - {-playerStatCredit::%{_player}%})% more credits to purchase this item!" to {_player}
+
+function gunSelect_cancelPurchase(player: player):
+	send "&cYou have canceled the purchase!" to {_player}
+
+function gunSelect_selectType(player: player, type: text):
+	set {-playerSelectType1::%{_player}%} to {_type}
+	if {_type} is "PRIMARY":
+		set {-playerSelectType2::%{_player}%} to "ASSAULT_RIFLE"
+		gunSelect_open({_player}, {_type}, "ASSAULT_RIFLE")
+	else:
+		gunSelect_open({_player}, {_type}, "UNKNOWN")
+
+function gunSelect_selectGun(player: player, type: text, selectID: text, gunID: text):
+	set {-playerSelectType1::%{_player}%} to {_type}
+	set {-playerSelectType2::%{_player}%} to {_selectID}
+	if {-playerSelectType1::%{_player}%} is "PRIMARY":
+		set {-playerSelectType3::%{_player}%} to {_gunID}
+		set {-playerSelectType3Select::%{_player}%} to {_selectID}
+		operator_sendDebug("Select Weapon: %{-playerSelectType1::%{_player}%}% -> %{-playerSelectType2::%{_player}%}% -> %{-playerSelectType3::%{_player}%}%")
+		set {_gun} to {-playerSelectType3::%{_player}%}
+	else:
+		set {-playerSelectType4::%{_player}%} to {_gunID}
+		set {-playerSelectType4Select::%{_player}%} to {_selectID}
+		operator_sendDebug("Select Weapon: %{-playerSelectType1::%{_player}%}% -> %{-playerSelectType2::%{_player}%}% -> %{-playerSelectType4::%{_player}%}%")
+		set {_gun} to {-playerSelectType4::%{_player}%}
+	send "&eYou have selected &a%{_gun}%&e!%nl%&eYou will have it as your &a%{-playerSelectType1::%{_player}%}% &eweapon on next respawn!" to {_player}
+	gunSelect_open({_player}, {_type}, {_selectID})
+
+function gunSelect_getSelectedGuns(player: player, slot: number, type: text = "PRIMARY"):
+	if {_type} is "PRIMARY":
+		set {_selectedGunChannel} to 3
+		set {_defaultWeapon} to "ASSAULT_RIFLE"
+		set {_defaultWeaponDisplay} to "AK12"
+	else if {_type} is "SECONDARY":
+		set {_selectedGunChannel} to 4
+		set {_defaultWeapon} to "PISTOL"
+	if {-playerSelectType%{_selectedGunChannel}%::%{_player}%} is not set:
+		set {_ID} to "%{_player}%.%{-guns_%{_defaultWeapon}%::1}'s name%"
+		set {_datas::*} to guns_getStats({_player}, {-guns_%{_defaultWeapon}%::1})
+		set {-gunAmmo::%{_ID}%} to ("%{_datas::10}%" parsed as number)
+		set slot {_slot} of {_player}'s inventory to {-gunAmmo::%{_ID}%} of {-guns_%{_defaultWeapon}%::1}
+		set {-playerSelectType%{_selectedGunChannel}%::%{_player}%} to {_defaultWeaponDisplay}
+		set {-playerSelectType%{_selectedGunChannel}%Select::%{_player}%} to {_defaultWeapon}
+		operator_sendDebug("Receive Weapon: %{_player}% -> DEFAULT")
+	else:
+		set {_loopGuns::*} to {-guns_%{-playerSelectType%{_selectedGunChannel}%Select::%{_player}%}%::*}
+		operator_sendDebug("Receive Weapon: (%{_player}%) %{-playerSelectType%{_selectedGunChannel}%Select::%{_player}%}% -> [%{_loopGuns::*}%]")
+		loop {_loopGuns::*}:
+			set {_selectID} to uncolored ({_loopGuns::%loop-index%}'s name)
+			set {_selectID} to api_toUpperCase({_selectID})
+			replace all " " with "_" in {_selectID}
+			operator_sendDebug("Search Weapon: (%{_player}%) %{_selectID}% -> %{-playerSelectType%{_selectedGunChannel}%::%{_player}%}%")
+			if {_selectID} is {-playerSelectType%{_selectedGunChannel}%::%{_player}%}:
+				set {_ID} to "%{_player}%.%{_loopGuns::%loop-index%}'s name%"
+				set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
+				set {-gunAmmo::%{_ID}%} to ("%{_datas::10}%" parsed as number)
+				set slot {_slot} of {_player}'s inventory to {-gunAmmo::%{_ID}%} of {_loopGuns::%loop-index%}
+				operator_sendDebug("Ammo Refill: (%{_player}%) %{-gunAmmo::%{_ID}%}% -> %{_datas::*}%")
+				exit 1 loop
+
+function gunSelect_getGun(player: player, gunType: text, gunID: text, inventorySlot: number):
+	if {_gunType} is "ALL":
+		add "ASSAULT_RIFLE" and "PDW" and "LMG" and "CARBINE" and "DMR" and "SHOTGUN" and "SNIPER_RIFLE" and "PISTOL" and "MACHINE_PISTOL" or "REVOLVER" or "OTHER" to {_allGunTypes::*}
+		loop (amount of {_allGunTypes::*}) times:
+			set {_loopGuns::*} to {-guns_%{_allGunTypes::%loop-number%}%::*}
+			loop {_loopGuns::*}:
+				set {_selectID} to uncolored ({_loopGuns::%loop-index%}'s name)
+				set {_selectID} to api_toUpperCase({_selectID})
+				replace all " " with "_" in {_selectID}
+				if {_selectID} is {_gunID}:
+					set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
+					set slot {_inventorySlot} of {_player} to {_datas::10} of {_loopGuns::%loop-index%}
+					guns_setFullAmmo({_player}, {_loopGuns::%loop-index%})
+					stop
+	else:
+		set {_loopGuns::*} to {-guns_%{_gunType}%::*}
+		loop {_loopGuns::*}:
+			set {_selectID} to uncolored ({_loopGuns::%loop-index%}'s name)
+			set {_selectID} to api_toUpperCase({_selectID})
+			replace all " " with "_" in {_selectID}
+			if {_selectID} is {_gunID}:
+				set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
+				set slot {_inventorySlot} of {_player} to {_datas::10} of {_loopGuns::%loop-index%}
+				guns_setFullAmmo({_player}, {_loopGuns::%loop-index%})
+				stop

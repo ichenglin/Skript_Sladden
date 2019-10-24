@@ -1,0 +1,170 @@
+function api_newHologram(location: location, text: text, duration: number=999999):
+	set {_location} to location 0.7 meters below {_location}
+	spawn area effect cloud at {_location}
+	add "{Radius:0.0f,CustomName:""%{_text}%"",CustomNameVisible:1b,Duration:%{_duration}%}" to last spawned entity's nbt
+
+function api_getPlayerName(uuid: text, returnUNIX: boolean=false) :: texts:
+	replace all "-" with "" in {_uuid}
+	set {_nameList} to text from "https://api.mojang.com/user/profiles/%{_uuid}%/names"
+	set {_draft::*} to {_nameList} split by """"
+	set {_loopToggle} to true
+	set {_getDraft} to 2
+	while ({_loopToggle}):
+		if {_draft::%{_getDraft}%} is "name":
+			add 2 to {_getDraft}
+#			send "%{_getDraft}%: %{_draft::%{_getDraft}%}%" to all players
+			add "%{_draft::%{_getDraft}%}%" to {_names::*}
+			add 2 to {_getDraft}
+		else if {_draft::%{_getDraft}%} is "changedToAt":
+			if {_returnUNIX} is true:
+				set {_amountNames} to amount of {_names::*}
+				set {_amountDraft} to ({_getDraft} + 1)
+				set {_UNIX} to {_draft::%{_amountDraft}%}
+				replace all ":" with "" in {_UNIX}
+				replace all "},{" with "" in {_UNIX}
+				replace all "}]" with "" in {_UNIX}
+				set {_names::%{_amountNames}%} to "%{_names::%{_amountNames}%}%:%{_UNIX}%"
+			add 2 to {_getDraft}
+		else:
+			set {_loopToggle} to false
+	return {_names::*}
+
+function api_getPlayerUUID(name: text) :: text:
+	set {_userData} to text from "https://api.mojang.com/users/profiles/minecraft/%{_name}%"
+	set {_draft::*} to {_userData} split by """"
+	return {_draft::4}
+
+function api_getNumberDisplay(number: number) :: text:
+	set {_times} to 1
+	while (true):
+		if {_number} < (1000 ^ {_times}):
+			set {_number} to ({_number} / (1000 ^ ({_times} - 1)))
+			exit 1 loop
+		add 1 to {_times}
+	if {_times} is 1:
+		set {_display} to ""
+	else if {_times} is 2:
+		set {_display} to "K"
+	else if {_times} is 3:
+		set {_display} to "M"
+	else if {_times} is 4:
+		set {_display} to "B"
+	else if {_times} is 5:
+		set {_display} to "T"
+	else if {_times} is 6:
+		set {_display} to "Qa"
+	else if {_times} is 7:
+		set {_display} to "Qi"
+	else:
+		return "FAIL"
+	return "%{_number}%%{_display}%"
+
+function api_getNumberDecimalDisplay(number: number) :: text:
+	set {_numberString} to "%{_number}%"
+	set {_numberSplit::*} to {_numberString} split by ""
+	set {_numberSplitLoop} to ((amount of {_numberSplit::*}) - 1)
+	set {_display} to ""
+	loop {_numberSplitLoop} times:
+		set {_reversedNumber} to (({_numberSplitLoop} - loop-number) + 1)
+		if loop-number is {_numberSplitLoop}:
+			set {_display} to "%{_numberSplit::%{_reversedNumber}%}%%{_display}%"
+		else if round(loop-number / 3) is (loop-number / 3):
+			set {_display} to ",%{_numberSplit::%{_reversedNumber}%}%%{_display}%"
+		else:
+			set {_display} to "%{_numberSplit::%{_reversedNumber}%}%%{_display}%"
+	return {_display}
+
+function api_UnixToDate(UNIX: number) :: date:
+	set {_date} to date(1970,1,1)
+	if {_UNIX} > 0:
+		add ("%{_UNIX}% seconds" parsed as time span) to {_date}
+	else if {_UNIX} < 0:
+		remove ("%{_UNIX}% seconds" parsed as time span) from {_date}
+	return {_date}
+
+function api_toUpperCase(text: text) :: text:
+	replace "a" with "A" in {_text}
+	replace "b" with "B" in {_text}
+	replace "c" with "C" in {_text}
+	replace "d" with "D" in {_text}
+	replace "e" with "E" in {_text}
+	replace "f" with "F" in {_text}
+	replace "g" with "G" in {_text}
+	replace "h" with "H" in {_text}
+	replace "i" with "I" in {_text}
+	replace "j" with "J" in {_text}
+	replace "k" with "K" in {_text}
+	replace "l" with "L" in {_text}
+	replace "m" with "M" in {_text}
+	replace "n" with "N" in {_text}
+	replace "o" with "O" in {_text}
+	replace "p" with "P" in {_text}
+	replace "q" with "Q" in {_text}
+	replace "r" with "R" in {_text}
+	replace "s" with "S" in {_text}
+	replace "t" with "T" in {_text}
+	replace "u" with "U" in {_text}
+	replace "v" with "V" in {_text}
+	replace "w" with "W" in {_text}
+	replace "x" with "X" in {_text}
+	replace "y" with "Y" in {_text}
+	replace "z" with "Z" in {_text}
+	return {_text}
+
+function api_toLowerCase(text: text) :: text:
+	replace "A" with "a" in {_text}
+	replace "B" with "b" in {_text}
+	replace "C" with "c" in {_text}
+	replace "D" with "d" in {_text}
+	replace "E" with "e" in {_text}
+	replace "F" with "f" in {_text}
+	replace "G" with "g" in {_text}
+	replace "H" with "h" in {_text}
+	replace "I" with "i" in {_text}
+	replace "J" with "j" in {_text}
+	replace "K" with "k" in {_text}
+	replace "L" with "l" in {_text}
+	replace "M" with "m" in {_text}
+	replace "N" with "n" in {_text}
+	replace "O" with "o" in {_text}
+	replace "P" with "p" in {_text}
+	replace "Q" with "q" in {_text}
+	replace "R" with "r" in {_text}
+	replace "S" with "s" in {_text}
+	replace "T" with "t" in {_text}
+	replace "U" with "u" in {_text}
+	replace "V" with "v" in {_text}
+	replace "W" with "w" in {_text}
+	replace "X" with "x" in {_text}
+	replace "Y" with "y" in {_text}
+	replace "Z" with "z" in {_text}
+	return {_text}
+
+function api_toSmallCap(text: text) :: text:
+	replace "A" with "ᴀ" in {_text}
+	replace "B" with "ʙ" in {_text}
+	replace "C" with "ᴄ" in {_text}
+	replace "D" with "ᴅ" in {_text}
+	replace "E" with "ᴇ" in {_text}
+	replace "F" with "ꜰ" in {_text}
+	replace "G" with "ɢ" in {_text}
+	replace "H" with "ʜ" in {_text}
+	replace "I" with "ɪ" in {_text}
+	replace "J" with "ᴊ" in {_text}
+	replace "K" with "ᴋ" in {_text}
+	replace "L" with "ʟ" in {_text}
+	replace "M" with "ᴍ" in {_text}
+	replace "N" with "ɴ" in {_text}
+	replace "O" with "ᴏ" in {_text}
+	replace "P" with "ᴘ" in {_text}
+	replace "Q" with "ǫ" in {_text}
+	replace "R" with "ʀ" in {_text}
+	replace "S" with "s" in {_text}
+	replace "T" with "ᴛ" in {_text}
+	replace "U" with "ᴜ" in {_text}
+	replace "V" with "ᴠ" in {_text}
+	replace "W" with "ᴡ" in {_text}
+	replace "X" with "x" in {_text}
+	replace "Y" with "ʏ" in {_text}
+	replace "Z" with "ᴢ" in {_text}
+	return {_text}
