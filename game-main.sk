@@ -29,17 +29,38 @@ command /game [<text>] [<text>] [<text>]:
 			stop
 		send "&aSuccessfully set data &6%arg 1% &avalue to &6%{-gameData::%arg 1%}%&a!" to executor
 
-command /getGun [<text>]:
+command /setTeam [<offline player>] [<text>]:
 	trigger:
 		if executor doesn't have permission "server.administrator":
 			send "&cYou are not allowed to use this command!" to executor
 			stop
-		if arg 1 is not set:
-			send "&cUsage: /getGun <gun>" to executor
+		if arg 1 or arg 2 is not set:
+			send "&cUsage: /setTeam <player> <blue/red>" to executor
 			stop
-		set {_gunID} to api_toUpperCase(arg 1)
+		if arg 1 is not online:
+			send "&cThe player is not online!" to executor
+			stop
+		if arg 2 is not "blue" or "red":
+			send "&cUsage: /setTeam <player> <blue/red>" to executor
+			stop
+		set {-playerTeam::%arg 1%} to api_toUpperCase(arg 2)
+		send "&aYou have set &6%arg 1%&a's team to &6%api_toUpperCase(arg 2)%&a!" to executor
+
+command /getGun [<offline player>] [<text>]:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 or arg 2 is not set:
+			send "&cUsage: /getGun <player> <gun>" to executor
+			stop
+		if arg 1 is not online:
+			send "&cThe player is not online!" to executor
+			stop
+		set {_gunID} to api_toUpperCase(arg 2)
 		replace all " " with "_" in {_gunID}
-		gunSelect_getGun(executor, "ALL", {_gunID}, (current hotbar slot of executor))
+		gunSelect_getGun(arg 1, "ALL", {_gunID}, (current hotbar slot of executor))
+		send "&aYou have set &6%arg 1%&a's held slot to &6%{_gunID}%&a!" to executor
 
 command /giveExp [<player>] [<number>] [<text>]:
 	trigger:
@@ -133,6 +154,10 @@ on drop:
 	if player's gamemode is creative:
 		stop
 	cancel event
+	set {_dropSlot} to current hotbar slot of player
+	wait 2 ticks
+	remove event-item from player's inventory
+	set slot {_dropSlot} of player's inventory to event-item
 
 on inventory click:
 	if player's gamemode is creative:
@@ -245,6 +270,9 @@ on swap hand items:
 on hunger meter change:
 	cancel event
 
+on combust:
+	extinguish event-entity
+
 on damage:
 	if victim is a armor stand:
 		if attacker's gamemode is creative:
@@ -258,10 +286,11 @@ on damage:
 
 on leftclick:
 	set {_tool} to player's tool
-	if {_tool} is iron sword:
-#		guns_melee(player, (iron sword named "&aKnife"), 60, 10)
-	else if {_tool} is diamond hoe or iron hoe:
+	if {_tool} is diamond hoe or iron hoe:
 		guns_zoomShoot(player, {_tool})
+
+on heal:
+	cancel event
 
 every 1 second:
 	set {_soundLocation} to location at (0, 0, 0) in world("world")
@@ -315,10 +344,10 @@ function game_start():
 	set {-gameData::status} to "STARTED"
 	set {-gameData::countdown} to (60 * 5) # Countdown: 5 minutes
 	set {-gameData::map} to "DEFAULT"
-	set {_randomMapNumber} to random integer between 1 and 2
-	if {_randomMapNumber} is 1:
+	set {_randomMapNumber} to random integer between 1 and 100
+	if {_randomMapNumber} <= 50:
 		set {-gameData::gamemode} to "TDM"
-	else if {_randomMapNumber} is 2:
+	else:
 		set {-gameData::gamemode} to "FFA"
 	game_addTeamAll()
 	loop all players:
