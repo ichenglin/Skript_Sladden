@@ -135,10 +135,10 @@ function guns_use(shooter: entity, shootLocation: location, weapon: item, damage
 		wait {_delay}
 
 function guns_displayCooldown(player: player, cooldownTimeInSeconds: number):
-	set {_cooldownDisplayPerTime} to ("%({_cooldownTimeInSeconds} / 9)% seconds" parsed as time span)
-	set {_player}'s exp to 160
-	loop 9 times:
-		set {_player}'s exp to (159 + (loop-number * 3))
+	set {_cooldownDisplayPerTime} to ("%({_cooldownTimeInSeconds} / 10)% seconds" parsed as time span)
+	set {_player}'s exp to 0
+	loop 10 times:
+		set level progress of {_player} to ((loop-number / 10) - 0.01)
 		wait {_cooldownDisplayPerTime}
 	set {_player}'s exp to 0
 
@@ -408,12 +408,6 @@ function guns_recoil(shooter: entity, recoilPower: number, horizontalOnly: boole
 	else:
 #		push {_shooter} backwards with force {_recoil}
 
-#function guns_isCrit(critChance: number) :: boolean:
-#	set {_random} to random integer between 1 and 100
-#	if {_random} <= {_critChance}:
-#		return true
-#	return false
-
 function guns_applyAccuracy(bulletLocation: location, accuracy: number) :: location:
 	set {_accuracy} to ((45 - {_accuracy}) / 45)
 
@@ -536,6 +530,11 @@ function entity_death(attacker: entity, victim: entity, weapon: item, isHeadshot
 		guns_getInventory({_victim})
 	else if {_attacker} is a player:
 		kill {_victim}
+	set {_attackerSubtitle} to "Killed %{_victim}%"
+	send title "&f" with subtitle "&c%api_toSmallCap({_attackerSubtitle})%" to {_attacker} for 2 second with 0 tick fadein and 0 tick fadeout
+	set {_victimTitle} to "Killed by %{_attacker}%"
+	set {_victimSubtitle} to "with %{_weapon}'s name%"
+	send title "&c%api_toSmallCap({_victimTitle})%" with subtitle "&e%api_toSmallCap({_victimSubtitle})%" to {_victim} for 2 second with 0 tick fadein and 0 tick fadeout
 		
 function entity_updateHealth(entity: entity):
 	if {-entityHealth::%{_entity}%} is set:
@@ -561,6 +560,24 @@ function entity_getTeamColor(entity: entity) :: text:
 	else:
 		set {_nameColor} to "&7"
 	return {_nameColor}
+
+function entity_getTeamArmor(entity: entity):
+	set {_entity}'s helmet to leather helmet
+	set {_entity}'s chestplate to leather chestplate
+	set {_entity}'s leggings to leather leggings
+	set {_entity}'s boots to leather boots
+	if {-gameData::gamemode} is "FFA":
+		set {_armorColor} to WHITE
+	else if {-playerTeam::%{_entity}%} is "RED":
+		set {_armorColor} to RED
+	else if {-playerTeam::%{_entity}%} is "BLUE":
+		set {_armorColor} to BLUE
+	else:
+		set {_armorColor} to WHITE
+	dye {_entity}'s helmet {_armorColor}
+	dye {_entity}'s chestplate {_armorColor}
+	dye {_entity}'s leggings {_armorColor}
+	dye {_entity}'s boots {_armorColor}
 
 function entity_blood(entity: entity):
 	loop 10 times:
@@ -635,6 +652,7 @@ function guns_getInventory(player: player):
 		set slot 2 of {_player}'s inventory to iron sword named "&aKnife" with lore "&e60 Damage"
 		set slot 7 of {_player}'s inventory to book named "&6Game Introduction"
 		set slot 8 of {_player}'s inventory to clock named "&6Gun Selector"
+		entity_getTeamArmor({_player})
 	set {_tool} to {_player}'s tool
 	guns_updateStats({_player}, {_tool})
 	if {_tool} is diamond hoe or iron hoe:
