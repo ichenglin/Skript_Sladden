@@ -1,309 +1,158 @@
-function gunSelect_addDataGun(type: text, unlockLevel: number, item: item):
-	add {_item} to {-guns_%{_type}%::*}
-	set {_selectID} to uncolored ({_item}'s name)
-	set {_selectID} to api_toUpperCase({_selectID})
-	replace all " " with "_" in {_selectID}
-	set {-gunUnlocklevel::%{_selectID}%} to {_unlockLevel}
+on script load:
+	gunData_updateGuns()
 
-function gunSelect_addDataAttachment(attachmentType: text, forGunType: text, item: item):
-	add {_item} to {-gunAttachmentList_%{_attachmentType}%::*}
-	set {_itemName} to {_item}'s name
-	set {-gunAttachmentGunList::%{_itemName}%} to {_forGunType}
+function gunData_updateGuns():
 
-function gunSelect_new(player: player):
-	gunSelect_open({_player}, "PRIMARY", "ASSAULT_RIFLE")
 
-function gunSelect_open(player: player, type: text = "PRIMARY", type2: text = "UNKNOWN"):
-	if {_type2} is "UNKNOWN":
-		if {_type} is "PRIMARY":
-			set {_type2} to "ASSAULT_RIFLE"
-		else if {_type} is "SECONDARY":
-			set {_type2} to "PISTOL"
-	operator_sendDebug("Access Selector: %{_type}% -> %{_type2}%")
-	set {_selectID} to uncolored {_type2}
-	set {_selectID} to api_toUpperCase({_selectID})
-	replace all " " with "_" in {_selectID}
-	set {-playerSelectType1::%{_player}%} to {_type}
-	set {-playerSelectType2::%{_player}%} to {_selectID}
-	open chest with 5 row named "&cSelect Gun" to {_player}
-	gunSelect_addType({_player}, 36, "PRIMARY")
-	gunSelect_addType({_player}, 37, "SECONDARY")
-	format a gui slot 38 of {_player} with stained glass:0 named "&7" with lore "" to do nothing
-	if {_type} is "PRIMARY":
-		gunSelect_addSelector({_player}, 39, "&aAssault Rifle", {_type})
-		gunSelect_addSelector({_player}, 40, "&aPDW", {_type})
-		gunSelect_addSelector({_player}, 41, "&aLMG", {_type})
-		gunSelect_addSelector({_player}, 42, "&aDMR", {_type})
-		gunSelect_addSelector({_player}, 43, "&aShotgun", {_type})
-		gunSelect_addSelector({_player}, 44, "&aSniper Rifle", {_type})
-	else if {_type} is "SECONDARY":
-		gunSelect_addSelector({_player}, 39, "&aPistol", {_type})
-		gunSelect_addSelector({_player}, 40, "&aMachine Pistol", {_type})
-		gunSelect_addSelector({_player}, 41, "&aRevolver", {_type})
-		gunSelect_addSelector({_player}, 42, "&aOther", {_type})
-	set {_slot} to 0
-	loop 9 times:
-		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
-		add 1 to {_slot}
-	set {_slot} to 27
-	loop 9 times:
-		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
-		add 1 to {_slot}
-	set {_slot} to 9
-	set {_gunList::*} to {-guns_%{_selectID}%::*}
-	loop {_gunList::*}:
-		gunSelect_addGun({_player}, {_slot}, {-guns_%{_selectID}%::%loop-index%}, {_type}, {_selectID})
-		add 1 to {_slot}
 
-function gunSelect_openAttachments(player: player, item: item, attachmentType: text = "OTHER"):
-	set {-playerAttachmentSelect::%{_player}%} to {_attachmentType}
-	open chest with 5 row named "&cEdit Attachments: %{_item}'s name%" to {_player}
-	set {_slot} to 0
-	loop 9 times:
-		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
-		add 1 to {_slot}
-	set {_slot} to 27
-	loop 9 times:
-		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
-		add 1 to {_slot}
-#	gunSelect_addAttachmentSelector({_player}, {_item}, 36, "&aOptic")
-#	gunSelect_addAttachmentSelector({_player}, {_item}, 37, "&aBarrel")
-#	gunSelect_addAttachmentSelector({_player}, {_item}, 38, "&aUnderbarrel")
-#	gunSelect_addAttachmentSelector({_player}, {_item}, 39, "&aOther")
-	gunSelect_addAttachmentSelector({_player}, {_item}, 36, "&aBarrel")
-	gunSelect_addAttachmentSelector({_player}, {_item}, 37, "&aUnderbarrel")
-	gunSelect_addAttachmentSelector({_player}, {_item}, 38, "&aOther")
-	format a gui slot 9 of {_player} with stained glass:4 named "&aDefault" with lore "" to close then run function gunSelect_selectAttachmentDefault({_player}, {_item}, {_attachmentType})
-	set {_attachmentSlot} to 10
-	loop {-gunAttachmentList_%{_attachmentType}%::*}:
-		set {_attachment} to {-gunAttachmentList_%{_attachmentType}%::%loop-index%}
-		set {_attachmentName} to {_attachment}'s name
-		set {_forGunType} to {-gunAttachmentGunList::%{_attachmentName}%}
-		gunSelect_addAttachment({_player}, {_attachmentSlot}, {_attachment}, {_item}, {_forGunType}, {_attachmentType})
-		add 1 to {_attachmentSlot}
+	delete {-guns_ASSAULT_RIFLE::*}
+	gunSelect_addDataGun("ASSAULT_RIFLE", 0, (stone hoe named "&aAK12" with lore "&e9.1 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e0.9 Recoil||&e40 Accuracy||&e600 Firerate||&e30 Ammo Capacity"))
+	gunSelect_addDataGun("ASSAULT_RIFLE", 1, (stone hoe named "&aAN-94" with lore "&e10.6 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e37 Accuracy||&e450 Firerate||&e25 Ammo Capacity"))
+#	gunSelect_addDataGun("ASSAULT_RIFLE", 3, (stone hoe named "&aAS VAL" with lore "&e11.1 Damage||&e75 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1 Recoil||&e40 Accuracy||&e450 Firerate||&e35 Ammo Capacity"))
+	gunSelect_addDataGun("ASSAULT_RIFLE", 9, (stone hoe named "&aSCAR-L" with lore "&e11.3 Damage||&e70 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e0.9 Recoil||&e37 Accuracy||&e600 Firerate||&e30 Ammo Capacity"))
+#	gunSelect_addDataGun("ASSAULT_RIFLE", 5, (stone hoe named "&aAUG A1" with lore "&e11.5 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e40 Accuracy||&e600 Firerate||&e25 Ammo Capacity"))
+#	gunSelect_addDataGun("ASSAULT_RIFLE", 6, (stone hoe named "&aM16A4" with lore "&e11.8 Damage||&e75 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e41 Accuracy||&e600 Firerate||&e25 Ammo Capacity"))
+	gunSelect_addDataGun("ASSAULT_RIFLE", 15, (stone hoe named "&aG36" with lore "&e10.6 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.1 Recoil||&e41 Accuracy||&e600 Firerate||&e30 Ammo Capacity"))
+#	gunSelect_addDataGun("ASSAULT_RIFLE", 8, (stone hoe named "&aM16A3" with lore "&e13.2 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.5 Recoil||&e40 Accuracy||&e450 Firerate||&e35 Ammo Capacity"))
+#	gunSelect_addDataGun("ASSAULT_RIFLE", 9, (stone hoe named "&aAUG A2" with lore "&e11.3 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e40 Accuracy||&e600 Firerate||&e25 Ammo Capacity"))
+	gunSelect_addDataGun("ASSAULT_RIFLE", 20, (stone hoe named "&aFAMAS" with lore "&e11.8 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e40 Accuracy||&e600 Firerate||&e30 Ammo Capacity"))
+	gunSelect_addDataGun("ASSAULT_RIFLE", 26, (stone hoe named "&aAK47" with lore "&e12.8 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.7 Recoil||&e39 Accuracy||&e450 Firerate||&e35 Ammo Capacity"))
+#	gunSelect_addDataGun("ASSAULT_RIFLE", 12, (stone hoe named "&aAUG A3" with lore "&e11.7 Damage||&e65 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e41 Accuracy||&e450 Firerate||&e30 Ammo Capacity"))
+#	gunSelect_addDataGun("ASSAULT_RIFLE", 13, (stone hoe named "&aL85A2" with lore "&e12.6 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.6 Recoil||&e39 Accuracy||&e450 Firerate||&e25 Ammo Capacity"))
+	gunSelect_addDataGun("ASSAULT_RIFLE", 28, (stone hoe named "&aHK416" with lore "&e13.3 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.4 Recoil||&e41 Accuracy||&e600 Firerate||&e35 Ammo Capacity"))
+	gunSelect_addDataGun("ASSAULT_RIFLE", 37, (stone hoe named "&aAK74" with lore "&e11.9 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.1 Recoil||&e40 Accuracy||&e600 Firerate||&e30 Ammo Capacity"))
+	gunSelect_addDataGun("ASSAULT_RIFLE", 45, (stone hoe named "&aAKM" with lore "&e14.1 Damage||&e65 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e41 Accuracy||&e600 Firerate||&e30 Ammo Capacity"))
+	gunSelect_addDataGun("ASSAULT_RIFLE", 50, (stone hoe named "&aAK103" with lore "&e14 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.5 Recoil||&e41 Accuracy||&e450 Firerate||&e35 Ammo Capacity"))
+	gunSelect_addDataGun("ASSAULT_RIFLE", 58, (stone hoe named "&aM231" with lore "&e14.6 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.5 Recoil||&e39 Accuracy||&e600 Firerate||&e30 Ammo Capacity"))
 
-function gunSelect_addType(player: player, slot: number, type: text):
-	if {_type} is "PRIMARY":
-		set {_display} to "&aPrimary Weapons"
-	else if {_type} is "SECONDARY":
-		set {_display} to "&aSecondary Weapons"
-	if {-playerSelectType1::%{_player}%} is {_type}:
-		format a gui slot {_slot} of {_player} with stained clay:5 named "%{_display}%" with lore "&aSELECTED" to do nothing
-	else:
-		format a gui slot {_slot} of {_player} with stained clay:14 named "%{_display}%" with lore "&eClick to select" to close then run function gunSelect_selectType({_player}, {_type})
 
-function gunSelect_addSelector(player: player, slot: number, itemName: text, type: text):
-	if {-playerSelectType1::%{_player}%} is not {_type}:
-		stop
-	set {_selectID} to uncolored {_itemName}
-	set {_selectID} to api_toUpperCase({_selectID})
-	replace all " " with "_" in {_selectID}
-	if {-playerSelectType2::%{_player}%} is {_selectID}:
-		format a gui slot {_slot} of {_player} with stained clay:5 named "%{_itemName}%" with lore "&aSELECTED" to do nothing
-	else:
-		format a gui slot {_slot} of {_player} with stained clay:14 named "%{_itemName}%" with lore "&eClick to select" to close then run function gunSelect_open({_player}, {_type}, {_selectID})
+	delete {-guns_PDW::*}
+	gunSelect_addDataGun("PDW", 0, (iron axe named "&aMP5K" with lore "&e10.6 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e0.9 Recoil||&e38 Accuracy||&e600 Firerate||&e45 Ammo Capacity"))
+	gunSelect_addDataGun("PDW", 2, (iron axe named "&aUMP45" with lore "&e9.2 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e0.6 Recoil||&e40 Accuracy||&e750 Firerate||&e40 Ammo Capacity"))
+	gunSelect_addDataGun("PDW", 10, (iron axe named "&aMP7" with lore "&e10.9 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e0.7 Recoil||&e39 Accuracy||&e600 Firerate||&e35 Ammo Capacity"))
+#	gunSelect_addDataGun("PDW", 3, (iron axe named "&aMAC10" with lore "&e9.7 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e0.8 Recoil||&e38 Accuracy||&e750 Firerate||&e40 Ammo Capacity"))
+	gunSelect_addDataGun("PDW", 16, (iron axe named "&aP90" with lore "&e9 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e0.5 Recoil||&e36 Accuracy||&e750 Firerate||&e45 Ammo Capacity"))
+	gunSelect_addDataGun("PDW", 21, (iron axe named "&aMP5" with lore "&e11 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e0.7 Recoil||&e39 Accuracy||&e600 Firerate||&e40 Ammo Capacity"))
+	gunSelect_addDataGun("PDW", 27, (iron axe named "&aColt SMG 635" with lore "&e11.1 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e0.7 Recoil||&e40 Accuracy||&e600 Firerate||&e40 Ammo Capacity"))
+#	gunSelect_addDataGun("PDW", 7, (iron axe named "&aL2A3" with lore "&e11.4 Damage||&e47 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e0.5 Recoil||&e38 Accuracy||&e600 Firerate||&e45 Ammo Capacity"))
+#	gunSelect_addDataGun("PDW", 8, (iron axe named "&aMP5SD" with lore "&e12.2 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.1 Recoil||&e37 Accuracy||&e600 Firerate||&e40 Ammo Capacity"))
+	gunSelect_addDataGun("PDW", 38, (iron axe named "&aMP10" with lore "&e9.9 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e34 Accuracy||&e750 Firerate||&e35 Ammo Capacity"))
+#	gunSelect_addDataGun("PDW", 10, (iron axe named "&aM3A1" with lore "&e12.5 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e39 Accuracy||&e600 Firerate||&e40 Ammo Capacity"))
+#	gunSelect_addDataGun("PDW", 11, (iron axe named "&aAUG A3 Para" with lore "&e10 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e40 Accuracy||&e750 Firerate||&e35 Ammo Capacity"))
+#	gunSelect_addDataGun("PDW", 12, (iron axe named "&aPPSh-41" with lore "&e10.3 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.1 Recoil||&e37 Accuracy||&e750 Firerate||&e40 Ammo Capacity"))
+#	gunSelect_addDataGun("PDW", 13, (iron axe named "&aFAL Para Shorty" with lore "&e10.6 Damage||&e48 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e41 Accuracy||&e750 Firerate||&e35 Ammo Capacity"))
+	gunSelect_addDataGun("PDW", 51, (iron axe named "&aKriss Vector" with lore "&e9.4 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.1 Recoil||&e38 Accuracy||&e1050 Firerate||&e25 Ammo Capacity"))
+	gunSelect_addDataGun("PDW", 59, (iron axe named "&aMP40" with lore "&e10 Damage||&e48 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e0.7 Recoil||&e39 Accuracy||&e900 Firerate||&e35 Ammo Capacity"))
+	gunSelect_addDataGun("PDW", 63, (iron axe named "&aTommy Gun" with lore "&e8.9 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e0.3 Recoil||&e38 Accuracy||&e765 Firerate||&e50 Ammo Capacity"))
 
-function gunSelect_addAttachmentSelector(player: player, item: item, slot: number, selectorName: text):
-	set {_selectID} to uncolored {_selectorName}
-	set {_selectID} to api_toUpperCase({_selectID})
-	replace all " " with "_" in {_selectID}
-	if {-playerAttachmentSelect::%{_player}%} is {_selectID}:
-		format a gui slot {_slot} of {_player} with stained clay:5 named "%{_selectorName}%" with lore "&aSELECTED" to do nothing
-	else:
-		format a gui slot {_slot} of {_player} with stained clay:14 named "%{_selectorName}%" with lore "&eClick to select" to close then run function gunSelect_openAttachments({_player}, {_item}, {_selectID})
+	delete {-guns_LMG::*}
+	gunSelect_addDataGun("LMG", 0, (golden pickaxe named "&aColt LMG" with lore "&e8.5 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e0.9 Recoil||&e39 Accuracy||&e420 Firerate||&e60 Ammo Capacity"))
+	gunSelect_addDataGun("LMG", 11, (golden pickaxe named "&aM60" with lore "&e9.5 Damage||&e60 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e40 Accuracy||&e450 Firerate||&e100 Ammo Capacity"))
+#	gunSelect_addDataGun("LMG", 4, (golden pickaxe named "&aAUG HBAR" with lore "&e8.7 Damage||&e60 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e39 Accuracy||&e450 Firerate||&e42 Ammo Capacity"))
+	gunSelect_addDataGun("LMG", 17, (golden pickaxe named "&aMG36" with lore "&e8.9 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.4 Recoil||&e37 Accuracy||&e450 Firerate||&e100 Ammo Capacity"))
+#	gunSelect_addDataGun("LMG", 6, (golden pickaxe named "&aRPK12" with lore "&e9.4 Damage||&e60 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e38 Accuracy||&e450 Firerate||&e45 Ammo Capacity"))
+#	gunSelect_addDataGun("LMG", 7, (golden pickaxe named "&aL86 LSW" with lore "&e9.6 Damage||&e60 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.4 Recoil||&e39 Accuracy||&e450 Firerate||&e30 Ammo Capacity"))
+	gunSelect_addDataGun("LMG", 22, (golden pickaxe named "&aRPK" with lore "&e9.7 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e39 Accuracy||&e450 Firerate||&e45 Ammo Capacity"))
+	gunSelect_addDataGun("LMG", 29, (golden pickaxe named "&aHK21" with lore "&e11.9 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.6 Recoil||&e32 Accuracy||&e750 Firerate||&e100 Ammo Capacity"))
+	gunSelect_addDataGun("LMG", 39, (golden pickaxe named "&aSCAR HAMR" with lore "&e9.8 Damage||&e60 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.4 Recoil||&e37 Accuracy||&e450 Firerate||&e50 Ammo Capacity"))
+#	gunSelect_addDataGun("LMG", 11, (golden pickaxe named "&aRPK74" with lore "&e10.1 Damage||&e65 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.7 Recoil||&e38 Accuracy||&e450 Firerate||&e45 Ammo Capacity"))
+	gunSelect_addDataGun("LMG", 52, (golden pickaxe named "&aMG3KWS" with lore "&e8.1 Damage||&e70 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.4 Recoil||&e39 Accuracy||&e600 Firerate||&e50 Ammo Capacity"))
 
-function gunSelect_addGun(player: player, slot: number, item: item, type: text, type2: text):
-	set {_selectID} to uncolored {_type2}
-	set {_selectID} to api_toUpperCase({_selectID})
-	replace all " " with "_" in {_selectID}
-	set {_gunID} to uncolored {_item}'s name
-	set {_gunID} to api_toUpperCase({_gunID})
-	replace all " " with "_" in {_gunID}
-	set {_itemDisplayName} to "%{_item}'s name% &e(Level %{-gunUnlocklevel::%{_gunID}%}%)"
-	set {_requireCredits} to ((({-gunUnlocklevel::%{_gunID}%} - {-playerStatLevel::%{_player}%}) * 140) + 700)
-	set {_itemDisplayLoreLocked} to "&cLOCKED||&cUnlock with &6level %{-gunUnlocklevel::%{_gunID}%}% &cor &6%{_requireCredits}% credits||&eClick to purchase with credits||||%{_item}'s lore%"
-	set {_itemDisplayLoreUnlocked} to "&eLeft-Click to Select||&eRight-Click to Edit Attachments||||%{_item}'s lore%"
-	set {_itemDisplayLoreSelected} to "&aSELECTED||&eRight-Click to Edit Attachments||||%{_item}'s lore%"
-	if {-gunUnlocklevel::%{_gunID}%} > {-playerStatLevel::%{_player}%}:
-		if {weaponUnlocked::%{_player}%.%{_gunID}%} is not set:
-			set {_weaponLocked} to true
-	set {_weaponItem} to {_item}
-	if {_weaponLocked} is true:
-		set {_weaponItem} to stained glass:14 named "&cError" with lore "&cAn error has occured,||&cplease report this to an administrator!"
-	set {_weaponItem} to {_weaponItem} named {_itemDisplayName}
-	if {_type} is "PRIMARY":
-		set {_selectedGun} to {-playerSelectType3::%{_player}%}
-	else if {_type} is "SECONDARY":
-		set {_selectedGun} to {-playerSelectType4::%{_player}%}
-	if {_weaponLocked} is true:
-		set {_weaponItem} to {_weaponItem} with lore {_itemDisplayLoreLocked}
-	else if {_selectedGun} is {_gunID}:
-		set {_weaponItem} to glowing {_weaponItem} with lore {_itemDisplayLoreSelected}
-		set {_weaponSelected} to true
-	else:
-		set {_weaponItem} to {_weaponItem} with lore {_itemDisplayLoreUnlocked}
-	if {_weaponLocked} is true:
-		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_buyGunRequest({_player}, {_item}, {_gunID})
-	else if {_weaponSelected} is true:
-		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_openAttachments({_player}, {_item}) with "right" click
-	else:
-		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_selectGun({_player}, {_type}, {_selectID}, {_gunID}) with "left" click
-		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_openAttachments({_player}, {_item}) with "right" click
 
-function gunSelect_addAttachment(player: player, slot: number, item: item, currentSelectedGun: item, forGunType: text, attachmentType: text):
-	set {_weaponType} to guns_getGunType({_currentSelectedGun})
-	set {_weaponLore} to {_item}'s lore
-	if {_forGunType} is "ALL":
-		set {_weaponLore} to "&f||%{_weaponLore}%"
-		set {_access} to true
-	else if {_weaponType} is {_forGunType}:
-		set {_weaponLore} to "&f||%{_weaponLore}%"
-		set {_access} to true
-	else:
-		set {_weaponLore} to "&f||&cThis attachment is not available for %{_currentSelectedGun}'s name%&c!||&f||%{_weaponLore}%"
-		set {_access} to false
-	set {_attachmentFullID} to "%{_player}'s UUID%.%{_currentSelectedGun}'s name%"
-	loop {-selectedAttachment::%{_attachmentFullID}%::*}:
-		if {-selectedAttachment::%{_attachmentFullID}%::%loop-index%} is {_item}:
-			set {_weaponLore} to "&aSELECTED%{_weaponLore}%"
-			set {_selected} to true
 
-	set {_displayItem} to {_item} with lore {_weaponLore}
-	if {_access} is true:
-		if {_selected} is true:
-			format a gui slot {_slot} of {_player} with glowing {_displayItem} to close then run function gunSelect_selectAttachment({_player}, {_currentSelectedGun}, {_item}, {_attachmentType})
-		else:
-			format a gui slot {_slot} of {_player} with {_displayItem} to close then run function gunSelect_selectAttachment({_player}, {_currentSelectedGun}, {_item}, {_attachmentType})
-	else:
-		format a gui slot {_slot} of {_player} with {_displayItem} to do nothing
+#	delete {-guns_CARBINE::*}
+#	gunSelect_addDataGun("CARBINE", 0, (stone axe named "&aM4A1" with lore "&e8.5 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.4 Recoil||&e36 Accuracy||&e300 Firerate||&e25 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 1, (stone axe named "&aG36C" with lore "&e8 Damage||&e50 Projectile Range||&e0.5 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e39 Accuracy||&e300 Firerate||&e35 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 2, (stone axe named "&aM4" with lore "&e9.5 Damage||&e45 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.5 Recoil||&e33 Accuracy||&e300 Firerate||&e30 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 28, (stone axe named "&aL22" with lore "&e6 Damage||&e45 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e27 Accuracy||&e450 Firerate||&e25 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 32, (stone axe named "&aSCAR PDW" with lore "&e6.5 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.4 Recoil||&e30 Accuracy||&e450 Firerate||&e35 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 35, (stone axe named "&aAKU12" with lore "&e7 Damage||&e55 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e33 Accuracy||&e450 Firerate||&e30 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 42, (stone axe named "&aGroza-1" with lore "&e8.5 Damage||&e50 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.5 Recoil||&e27 Accuracy||&e450 Firerate||&e30 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 51, (stone axe named "&aAK12C" with lore "&e9 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.7 Recoil||&e30 Accuracy||&e450 Firerate||&e25 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 3, (stone axe named "&aHoney Badger" with lore "&e9.5 Damage||&e50 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e33 Accuracy||&e450 Firerate||&e35 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 69, (stone axe named "&aSR-3M" with lore "&e8 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.7 Recoil||&e36 Accuracy||&e600 Firerate||&e30 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 79, (stone axe named "&aGroza-4" with lore "&e10.5 Damage||&e50 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.4 Recoil||&e30 Accuracy||&e450 Firerate||&e30 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 86, (stone axe named "&aMC51SD" with lore "&e16.5 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.6 Recoil||&e33 Accuracy||&e300 Firerate||&e35 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 89, (stone axe named "&aFAL 50.63 Para" with lore "&e11 Damage||&e45 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.8 Recoil||&e27 Accuracy||&e450 Firerate||&e45 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 93, (stone axe named "&a1858 Carbine" with lore "&e65 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e4 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e39 Accuracy||&e75 Firerate||&e6 Ammo Capacity"))
+#	gunSelect_addDataGun("CARBINE", 4, (stone axe named "&aAK105" with lore "&e11.5 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.4 Recoil||&e33 Accuracy||&e450 Firerate||&e35 Ammo Capacity"))
 
-function gunSelect_selectAttachment(player: player, weapon: item, attachment: item, attachmentType: text):
-	if {_attachmentType} is "OPTIC":
-		set {_attachmentTypeID} to 1
-	else if {_attachmentType} is "BARREL":
-		set {_attachmentTypeID} to 2
-	else if {_attachmentType} is "UNDERBARREL":
-		set {_attachmentTypeID} to 3
-	else if {_attachmentType} is "OTHER":
-		set {_attachmentTypeID} to 4
-	set {_attachmentFullID} to "%{_player}'s UUID%.%{_weapon}'s name%"
-	set {-selectedAttachment::%{_attachmentFullID}%::%{_attachmentTypeID}%} to {_attachment}
-	send "&eSelected attachment &a%uncolored {_attachment}'s name% &efor &a%uncolored {_weapon}'s name%&e!" to {_player}
-	gunSelect_openAttachments({_player}, {_weapon}, {_attachmentType})
+	delete {-guns_DMR::*}
+	gunSelect_addDataGun("DMR", 0, (iron hoe named "&aMK11" with lore "&e40 Damage||&e70 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.4 Recoil||&e41 Accuracy||&e135 Firerate||&e20 Ammo Capacity||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("DMR", 4, (iron hoe named "&aSKS" with lore "&e40 Damage||&e75 Projectile Range||&e0.6 Projectile Radius||&e4 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e44 Accuracy||&e135 Firerate||&e20 Ammo Capacity||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+#	gunSelect_addDataGun("DMR", 2, (iron hoe named "&aVSS Vintorez" with lore "&e55 Damage||&e65 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.5 Recoil||&e41 Accuracy||&e135 Firerate||&e10 Ammo Capacity||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("DMR", 18, (iron hoe named "&aMSG90" with lore "&e50 Damage||&e70 Projectile Range||&e0.5 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.7 Recoil||&e41 Accuracy||&e135 Firerate||&e10 Ammo Capacity||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("DMR", 23, (iron hoe named "&aBeowulf TCR" with lore "&e60 Damage||&e68 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e41 Accuracy||&e135 Firerate||&e10 Ammo Capacity||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("DMR", 30, (iron hoe named "&aSA58 SPR" with lore "&e48 Damage||&e70 Projectile Range||&e0.6 Projectile Radius||&e4 Projectile Piercing||&e1 Projectile Burst||&e1.4 Recoil||&e41 Accuracy||&e135 Firerate||&e20 Ammo Capacity||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("DMR", 53, (iron hoe named "&aSCAR SSR" with lore "&e57 Damage||&e70 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.7 Recoil||&e42 Accuracy||&e135 Firerate||&e20 Ammo Capacity||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
 
-function gunSelect_selectAttachmentDefault(player: player, weapon: item, attachmentType: text):
-	if {_attachmentType} is "OPTIC":
-		set {_attachmentTypeID} to 1
-	else if {_attachmentType} is "BARREL":
-		set {_attachmentTypeID} to 2
-	else if {_attachmentType} is "UNDERBARREL":
-		set {_attachmentTypeID} to 3
-	else if {_attachmentType} is "OTHER":
-		set {_attachmentTypeID} to 4
-	set {_attachmentFullID} to "%{_player}'s UUID%.%{_weapon}'s name%"
-	delete {-selectedAttachment::%{_attachmentFullID}%::%{_attachmentTypeID}%}
-	send "&eSelected attachment &aDefault &efor &a%uncolored {_weapon}'s name%&e!" to {_player}
-	gunSelect_openAttachments({_player}, {_weapon}, {_attachmentType})
+	delete {-guns_SHOTGUN::*}
+	gunSelect_addDataGun("SHOTGUN", 0, (golden shovel named "&aKSG-12" with lore "&e10.1 Damage||&e65 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e5 Projectile Burst||&e1 Recoil||&e23 Accuracy||&e75 Firerate||&e7 Ammo Capacity"))
+	gunSelect_addDataGun("SHOTGUN", 3, (golden shovel named "&aRemington 870" with lore "&e11.6 Damage||&e65 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e5 Projectile Burst||&e1.2 Recoil||&e23 Accuracy||&e75 Firerate||&e6 Ammo Capacity"))
+	gunSelect_addDataGun("SHOTGUN", 12, (golden shovel named "&aDBV12" with lore "&e8.1 Damage||&e65 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e7 Projectile Burst||&e1.1 Recoil||&e9 Accuracy||&e150 Firerate||&e8 Ammo Capacity"))
+	gunSelect_addDataGun("SHOTGUN", 19, (golden shovel named "&aKS-23M" with lore "&e18.6 Damage||&e45 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e5 Projectile Burst||&e1.5 Recoil||&e35 Accuracy||&e30 Firerate||&e4 Ammo Capacity"))
+	gunSelect_addDataGun("SHOTGUN", 31, (golden shovel named "&aSaiga-12" with lore "&e7.9 Damage||&e65 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e9 Projectile Burst||&e1.3 Recoil||&e12 Accuracy||&e150 Firerate||&e6 Ammo Capacity"))
+	gunSelect_addDataGun("SHOTGUN", 40, (golden shovel named "&aStevens DB" with lore "&e20.8 Damage||&e45 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e4 Projectile Burst||&e1.3 Recoil||&e41 Accuracy||&e60 Firerate||&e2 Ammo Capacity"))
+	gunSelect_addDataGun("SHOTGUN", 55, (golden shovel named "&aAA-12" with lore "&e8 Damage||&e45 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e8 Projectile Burst||&e1 Recoil||&e19 Accuracy||&e150 Firerate||&e8 Ammo Capacity"))
+	gunSelect_addDataGun("SHOTGUN", 60, (golden shovel named "&aSPAS-12" with lore "&e16.3 Damage||&e60 Projectile Range||&e0.6 Projectile Radius||&e4 Projectile Piercing||&e6 Projectile Burst||&e1.2 Recoil||&e32 Accuracy||&e45 Firerate||&e6 Ammo Capacity"))
 
-function gunSelect_buyGunRequest(player: player, shopItem: item, gunID: text):
-	set {_requireCredits} to ((({-gunUnlocklevel::%{_gunID}%} - {-playerStatLevel::%{_player}%}) * 140) + 700)
-	open chest with 5 row named "&cConfirm purchase: %{_shopItem}'s name% &c(%{_requireCredits}% Credits)" to {_player}
-	format a gui slot 13 of {_player} with {_shopItem} to do nothing
-	format a gui slot 29 of {_player} with stained clay:5 named "&aPurchase" with lore "&eClick to confirm the purchase!" to close then run function gunSelect_buyGun({_player}, {_shopItem}, {_gunID})
-	format a gui slot 33 of {_player} with stained clay:14 named "&cCancel" with lore "&eClick to cancel the purchase!" to close then run function gunSelect_cancelPurchase({_player})
+	delete {-guns_SNIPER_RIFLE::*}
+	gunSelect_addDataGun("SNIPER_RIFLE", 0, (diamond hoe named "&aIntervention" with lore "&e70 Damage||&e75 Projectile Range||&e0.5 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1 Recoil||&e39 Accuracy||&e130 Firerate||&e8 Ammo Capacity||&6Single-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("SNIPER_RIFLE", 5, (diamond hoe named "&aRemington 700" with lore "&e74 Damage||&e80 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e0.9 Recoil||&e42 Accuracy||&e60 Firerate||&e7 Ammo Capacity||&6Single-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("SNIPER_RIFLE", 24, (diamond hoe named "&aDragunov SVU" with lore "&e33 Damage||&e65 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e36 Accuracy||&e120 Firerate||&e10 Ammo Capacity||&6Multiple-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("SNIPER_RIFLE", 32, (diamond hoe named "&aAWS" with lore "&e72 Damage||&e75 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e36 Accuracy||&e60 Firerate||&e10 Ammo Capacity||&6Single-Shot||&6Suppressor||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("SNIPER_RIFLE", 36, (diamond hoe named "&aBFG 50" with lore "&e125 Damage||&e80 Projectile Range||&e0.5 Projectile Radius||&e5 Projectile Piercing||&e1 Projectile Burst||&e1.7 Recoil||&e42 Accuracy||&e20 Firerate||&e1 Ammo Capacity||&6Single-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("SNIPER_RIFLE", 41, (diamond hoe named "&aL115A3" with lore "&e76 Damage||&e85 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e42 Accuracy||&e60 Firerate||&e5 Ammo Capacity||&6Single-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("SNIPER_RIFLE", 43, (diamond hoe named "&aMosin Nagant" with lore "&e72 Damage||&e75 Projectile Range||&e0.7 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e0.9 Recoil||&e36 Accuracy||&e90 Firerate||&e5 Ammo Capacity||&6Single-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("SNIPER_RIFLE", 46, (diamond hoe named "&aDragunov SVDS" with lore "&e35 Damage||&e70 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e39 Accuracy||&e120 Firerate||&e10 Ammo Capacity||&6Multiple-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("SNIPER_RIFLE", 48, (diamond hoe named "&aHecate II" with lore "&e135 Damage||&e80 Projectile Range||&e0.5 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.6 Recoil||&e33 Accuracy||&e30 Firerate||&e11 Ammo Capacity||&6Single-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("SNIPER_RIFLE", 54, (diamond hoe named "&aM107" with lore "&e145 Damage||&e85 Projectile Range||&e0.6 Projectile Radius||&e7 Projectile Piercing||&e1 Projectile Burst||&e5.6 Recoil||&e43 Accuracy||&e20 Firerate||&e10 Ammo Capacity||&6Single-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("SNIPER_RIFLE", 61, (diamond hoe named "&aSteyr Scout" with lore "&e79 Damage||&e95 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1 Recoil||&e42 Accuracy||&e60 Firerate||&e8 Ammo Capacity||&6Single-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("SNIPER_RIFLE", 64, (diamond hoe named "&aWA2000" with lore "&e72 Damage||&e95 Projectile Range||&e0.5 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e41 Accuracy||&e75 Firerate||&e6 Ammo Capacity||&6Multiple-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
 
-function gunSelect_buyGun(player: player, shopItem: item, gunID: text):
-	set {_requireCredits} to ((({-gunUnlocklevel::%{_gunID}%} - {-playerStatLevel::%{_player}%}) * 140) + 700)
-	if {_requireCredits} <= {-playerStatCredit::%{_player}%}:
-		remove {_requireCredits} from {-playerStatCredit::%{_player}%}
-		send "&aYou have successfully purchased %{_shopItem}'s name%&a!" to {_player}
-		send "&c-%{_requireCredits}% Credits (Shop)" to {_player}
-		set {weaponUnlocked::%{_player}%.%{_gunID}%} to now
-		game_updateDisplay({_player})
-		stop
-	send "&cYou need %({_requireCredits} - {-playerStatCredit::%{_player}%})% more credits to purchase this item!" to {_player}
+	delete {-guns_PISTOL::*}
+	gunSelect_addDataGun("PISTOL", 0, (wooden hoe named "&aM9" with lore "&e35 Damage||&e55 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e0.9 Recoil||&e39 Accuracy||&e120 Firerate||&e15 Ammo Capacity"))
+	gunSelect_addDataGun("PISTOL", 6, (wooden hoe named "&aGlock 17" with lore "&e34 Damage||&e40 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e0.9 Recoil||&e37 Accuracy||&e120 Firerate||&e17 Ammo Capacity"))
+	gunSelect_addDataGun("PISTOL", 13, (wooden hoe named "&aM1911" with lore "&e42 Damage||&e40 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e35 Accuracy||&e60 Firerate||&e8 Ammo Capacity"))
+	gunSelect_addDataGun("PISTOL", 25, (wooden hoe named "&aDeagle 44" with lore "&e46 Damage||&e35 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1 Recoil||&e36 Accuracy||&e60 Firerate||&e8 Ammo Capacity"))
+	gunSelect_addDataGun("PISTOL", 33, (wooden hoe named "&aM45A1" with lore "&e40 Damage||&e40 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.7 Recoil||&e40 Accuracy||&e90 Firerate||&e10 Ammo Capacity"))
+	gunSelect_addDataGun("PISTOL", 42, (wooden hoe named "&aFive Seven" with lore "&e29 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e37 Accuracy||&e105 Firerate||&e20 Ammo Capacity"))
+	gunSelect_addDataGun("PISTOL", 47, (wooden hoe named "&aZIP 22" with lore "&e15 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e0.6 Recoil||&e38 Accuracy||&e150 Firerate||&e10 Ammo Capacity"))
+	gunSelect_addDataGun("PISTOL", 56, (wooden hoe named "&aDesert Eagle XIX" with lore "&e65 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.9 Recoil||&e39 Accuracy||&e60 Firerate||&e8 Ammo Capacity"))
 
-function gunSelect_cancelPurchase(player: player):
-	send "&cYou have canceled the purchase!" to {_player}
+	delete {-guns_MACHINE_PISTOL::*}
+	gunSelect_addDataGun("MACHINE_PISTOL", 0, (wooden axe named "&aGlock 18" with lore "&e4.5 Damage||&e45 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.6 Recoil||&e35 Accuracy||&e900 Firerate||&e19 Ammo Capacity"))
+	gunSelect_addDataGun("MACHINE_PISTOL", 7, (wooden axe named "&aM93R" with lore "&e5.1 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e0.7 Recoil||&e33 Accuracy||&e900 Firerate||&e15 Ammo Capacity"))
+	gunSelect_addDataGun("MACHINE_PISTOL", 14, (wooden axe named "&aTEC-9" with lore "&e6.7 Damage||&e45 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.2 Recoil||&e32 Accuracy||&e1080 Firerate||&e20 Ammo Capacity"))
+	gunSelect_addDataGun("MACHINE_PISTOL", 34, (wooden axe named "&aMicro UZI" with lore "&e7.2 Damage||&e45 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.1 Recoil||&e26 Accuracy||&e1170 Firerate||&e20 Ammo Capacity"))
+	gunSelect_addDataGun("MACHINE_PISTOL", 49, (wooden axe named "&aMP1911" with lore "&e7.6 Damage||&e45 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e1.1 Recoil||&e36 Accuracy||&e1035 Firerate||&e15 Ammo Capacity"))
 
-function gunSelect_selectType(player: player, type: text):
-	set {-playerSelectType1::%{_player}%} to {_type}
-	if {_type} is "PRIMARY":
-		set {-playerSelectType2::%{_player}%} to "ASSAULT_RIFLE"
-		gunSelect_open({_player}, {_type}, "ASSAULT_RIFLE")
-	else:
-		gunSelect_open({_player}, {_type}, "UNKNOWN")
+	delete {-guns_REVOLVER::*}
+	gunSelect_addDataGun("REVOLVER", 0, (golden hoe named "&aMP412 REX" with lore "&e46 Damage||&e50 Projectile Range||&e0.6 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e39 Accuracy||&e90 Firerate||&e6 Ammo Capacity"))
+	gunSelect_addDataGun("REVOLVER", 8, (golden hoe named "&aMateba 6" with lore "&e46 Damage||&e55 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.1 Recoil||&e36 Accuracy||&e90 Firerate||&e6 Ammo Capacity"))
 
-function gunSelect_selectGun(player: player, type: text, selectID: text, gunID: text):
-	set {-playerSelectType1::%{_player}%} to {_type}
-	set {-playerSelectType2::%{_player}%} to {_selectID}
-	if {-playerSelectType1::%{_player}%} is "PRIMARY":
-		set {-playerSelectType3::%{_player}%} to {_gunID}
-		set {-playerSelectType3Select::%{_player}%} to {_selectID}
-		operator_sendDebug("Select Weapon: %{-playerSelectType1::%{_player}%}% -> %{-playerSelectType2::%{_player}%}% -> %{-playerSelectType3::%{_player}%}%")
-		set {_gun} to {-playerSelectType3::%{_player}%}
-	else:
-		set {-playerSelectType4::%{_player}%} to {_gunID}
-		set {-playerSelectType4Select::%{_player}%} to {_selectID}
-		operator_sendDebug("Select Weapon: %{-playerSelectType1::%{_player}%}% -> %{-playerSelectType2::%{_player}%}% -> %{-playerSelectType4::%{_player}%}%")
-		set {_gun} to {-playerSelectType4::%{_player}%}
-	send "&eYou have selected &a%{_gun}%&e!%nl%&eYou will have it as your &a%{-playerSelectType1::%{_player}%}% &eweapon on next respawn!" to {_player}
-	gunSelect_open({_player}, {_type}, {_selectID})
+	delete {-guns_OTHER::*}
+	gunSelect_addDataGun("OTHER", 0, (golden shovel named "&aSerbu Shotgun" with lore "&e23.4 Damage||&e45 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e7 Projectile Burst||&e1.3 Recoil||&e3 Accuracy||&e60 Firerate||&e7 Ammo Capacity"))
+	gunSelect_addDataGun("OTHER", 35, (diamond hoe named "&aSFG 50" with lore "&e75 Damage||&e60 Projectile Range||&e0.5 Projectile Radius||&e3 Projectile Piercing||&e1 Projectile Burst||&e1.8 Recoil||&e35 Accuracy||&e60 Firerate||&e1 Ammo Capacity||&6Single-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
+	gunSelect_addDataGun("OTHER", 44, (golden shovel named "&aSawed Off" with lore "&e31.8 Damage||&e40 Projectile Range||&e0.5 Projectile Radius||&e1 Projectile Piercing||&e4 Projectile Burst||&e1.7 Recoil||&e33 Accuracy||&e60 Firerate||&e2 Ammo Capacity"))
+	gunSelect_addDataGun("OTHER", 57, (golden shovel named "&aSaiga-12U" with lore "&e9.4 Damage||&e35 Projectile Range||&e0.5 Projectile Radius||&e2 Projectile Piercing||&e4 Projectile Burst||&e1.1 Recoil||&e11 Accuracy||&e150 Firerate||&e3 Ammo Capacity"))
+	gunSelect_addDataGun("OTHER", 62, (diamond hoe named "&aObrez" with lore "&e78 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e2 Projectile Piercing||&e1 Projectile Burst||&e1.3 Recoil||&e30 Accuracy||&e90 Firerate||&e5 Ammo Capacity||&6Single-Shot||||&6Right-Click to Aim||&6Left-Click while aiming to fire."))
 
-function gunSelect_getSelectedGuns(player: player, slot: number, type: text = "PRIMARY"):
-	if {_type} is "PRIMARY":
-		set {_selectedGunChannel} to 3
-		set {_defaultWeapon} to "ASSAULT_RIFLE"
-		set {_defaultWeaponDisplay} to "AK12"
-	else if {_type} is "SECONDARY":
-		set {_selectedGunChannel} to 4
-		set {_defaultWeapon} to "PISTOL"
-	if {-playerSelectType%{_selectedGunChannel}%::%{_player}%} is not set:
-		set {_ID} to "%{_player}%.%{-guns_%{_defaultWeapon}%::1}'s name%"
-		set {_datas::*} to guns_getStats({_player}, {-guns_%{_defaultWeapon}%::1})
-		set {-gunAmmo::%{_ID}%} to ("%{_datas::10}%" parsed as number)
-		set slot {_slot} of {_player}'s inventory to {-gunAmmo::%{_ID}%} of {-guns_%{_defaultWeapon}%::1}
-		set {-playerSelectType%{_selectedGunChannel}%::%{_player}%} to {_defaultWeaponDisplay}
-		set {-playerSelectType%{_selectedGunChannel}%Select::%{_player}%} to {_defaultWeapon}
-		operator_sendDebug("Receive Weapon: %{_player}% -> DEFAULT")
-	else:
-		set {_loopGuns::*} to {-guns_%{-playerSelectType%{_selectedGunChannel}%Select::%{_player}%}%::*}
-		operator_sendDebug("Receive Weapon: (%{_player}%) %{-playerSelectType%{_selectedGunChannel}%Select::%{_player}%}% -> [%{_loopGuns::*}%]")
-		loop {_loopGuns::*}:
-			set {_selectID} to uncolored ({_loopGuns::%loop-index%}'s name)
-			set {_selectID} to api_toUpperCase({_selectID})
-			replace all " " with "_" in {_selectID}
-			operator_sendDebug("Search Weapon: (%{_player}%) %{_selectID}% -> %{-playerSelectType%{_selectedGunChannel}%::%{_player}%}%")
-			if {_selectID} is {-playerSelectType%{_selectedGunChannel}%::%{_player}%}:
-				set {_ID} to "%{_player}%.%{_loopGuns::%loop-index%}'s name%"
-				set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
-				set {-gunAmmo::%{_ID}%} to ("%{_datas::10}%" parsed as number)
-				set slot {_slot} of {_player}'s inventory to {-gunAmmo::%{_ID}%} of {_loopGuns::%loop-index%}
-				operator_sendDebug("Ammo Refill: (%{_player}%) %{-gunAmmo::%{_ID}%}% -> %{_datas::*}%")
-				exit 1 loop
 
-function gunSelect_getGun(player: player, gunType: text, gunID: text, inventorySlot: number):
-	if {_gunType} is "ALL":
-		add "ASSAULT_RIFLE" and "PDW" and "LMG" and "CARBINE" and "DMR" and "SHOTGUN" and "SNIPER_RIFLE" and "PISTOL" and "MACHINE_PISTOL" or "REVOLVER" or "OTHER" to {_allGunTypes::*}
-		loop (amount of {_allGunTypes::*}) times:
-			set {_loopGuns::*} to {-guns_%{_allGunTypes::%loop-number%}%::*}
-			loop {_loopGuns::*}:
-				set {_selectID} to uncolored ({_loopGuns::%loop-index%}'s name)
-				set {_selectID} to api_toUpperCase({_selectID})
-				replace all " " with "_" in {_selectID}
-				if {_selectID} is {_gunID}:
-					set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
-					set slot {_inventorySlot} of {_player} to {_datas::10} of {_loopGuns::%loop-index%}
-					guns_setFullAmmo({_player}, {_loopGuns::%loop-index%})
-					stop
-	else:
-		set {_loopGuns::*} to {-guns_%{_gunType}%::*}
-		loop {_loopGuns::*}:
-			set {_selectID} to uncolored ({_loopGuns::%loop-index%}'s name)
-			set {_selectID} to api_toUpperCase({_selectID})
-			replace all " " with "_" in {_selectID}
-			if {_selectID} is {_gunID}:
-				set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
-				set slot {_inventorySlot} of {_player} to {_datas::10} of {_loopGuns::%loop-index%}
-				guns_setFullAmmo({_player}, {_loopGuns::%loop-index%})
-				stop
+
+	delete {-guns_PROTOTYPE::*}
+	gunSelect_addDataGun("PROTOTYPE", 0, (stone hoe named "&aPaintball Gun" with lore "&e2 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e0.3 Recoil||&e42 Accuracy||&e240 Firerate||&e100 Ammo Capacity"))
+
+
+
+	delete {-gunAttachmentList_BARREL::*}
+	gunSelect_addDataAttachment("BARREL", "ALL", (stone_button named "&aSuppressor" with lore "&f||&7A standard heavy suppressor with strong||&7sound masking, while decrease||&7overall damage.||&f||&e-5%% Damage Bonus||&6Radar Suppression||&f||&c(Supressors are still in development,||&cyou won't get hide from radar)"))
+
+	delete {-gunAttachmentList_UNDERBARREL::*}
+	gunSelect_addDataAttachment("UNDERBARREL", "ALL", (stick named "&aVertical Grip" with lore "&f||&7Grab onto this grip and hold on—you're||&7in control now! Improves hipfire||&7stability and gun recoil recovery||&7while reducing hipfire spread.||&f||&e-10%% Recoil Bonus||&e+5%% Accuracy Bonus"))
+
+	delete {-gunAttachmentList_OTHER::*}
+	gunSelect_addDataAttachment("OTHER", "SHOTGUN", (351:3 named "&aBirdshot" with lore "&f||&7Changes your shot load to birdshot,||&7small pellets that are great for hunting waterfowl and noobs.||&7Fires many more pellets, but||&7each pellet has lower damage potential.||&7Wider pellet spread due to wider choke.||&f||&e-55%% Damage Bonus||&e-10%% Accuracy Bonus||&e+50%% Projectile Burst Bonus"))
+	gunSelect_addDataAttachment("OTHER", "SHOTGUN", (nether wart item named "&aFlechette" with lore "&f||&7Changes your shot load to flechettes,||&7increased damage and bullet piercing.||&f||&e+5%% Damage Bonus||&e+1 Projectile Piercing Bonus"))
+	gunSelect_addDataAttachment("OTHER", "ASSAULT_RIFLE", (brick item named "&aAssault Rifle Extended Magazine" with lore "&f||&7A high capacity magazine,||&7or a large capacity magazine for assault rifles,||&7is a magazine for a firearm which is capable||&7of holding more ammunition than a||&7normal magazine.||&f||&e+7 Ammo Capacity Bonus"))
+	gunSelect_addDataAttachment("OTHER", "PDW", (iron ingot named "&aPDW Extended Magazine" with lore "&f||&7A high capacity magazine,||&7or a large capacity magazine for PDWs,||&7is a magazine for a firearm which is capable||&7of holding more ammunition than a||&7normal magazine.||&f||&e+5 Ammo Capacity Bonus"))
