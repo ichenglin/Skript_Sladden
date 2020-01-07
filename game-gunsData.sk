@@ -140,8 +140,14 @@ function gunData_updateGuns():
 
 
 
+	delete {-guns_LIMITED_TIME::*}
+	gunSelect_addDataGun("LIMITED_TIME", 0, (stone hoe named "&aPaintball Gun" with lore "&e12 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e0.3 Recoil||&e42 Accuracy||&e240 Firerate||&e10 Ammo Capacity"))
+
+
+
+
 	delete {-guns_PROTOTYPE::*}
-	gunSelect_addDataGun("PROTOTYPE", 0, (stone hoe named "&aPaintball Gun" with lore "&e2 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e0.3 Recoil||&e42 Accuracy||&e240 Firerate||&e100 Ammo Capacity"))
+	gunSelect_addDataGun("PROTOTYPE", 0, (stone hoe named "&aBeta Paintball Gun" with lore "&e2 Damage||&e55 Projectile Range||&e0.6 Projectile Radius||&e1 Projectile Piercing||&e1 Projectile Burst||&e0.3 Recoil||&e42 Accuracy||&e240 Firerate||&e100 Ammo Capacity"))
 
 
 
