@@ -41,6 +41,7 @@ function gunSelect_open(player: player, type: text = "PRIMARY", type2: text = "U
 		gunSelect_addSelector({_player}, 40, "&aMachine Pistol", {_type})
 		gunSelect_addSelector({_player}, 41, "&aRevolver", {_type})
 		gunSelect_addSelector({_player}, 42, "&aOther", {_type})
+		gunSelect_addSelector({_player}, 44, "&aLimited Time", {_type})
 	set {_slot} to 0
 	loop 9 times:
 		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
