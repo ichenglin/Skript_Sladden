@@ -12,9 +12,17 @@ every 1 minute:
 		set {_broadcastMessage} to "&eYou will receive credits for level up, you can use them to purchase guns and attachments in the gun selector menu."
 	send "&6[Auto Broadcast]: &f%{_broadcastMessage}%" to all players
 
-command /game [<text>] [<text>] [<text>]:
+command /commands:
 	trigger:
 		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		send "&c&lServer Commands:" to executor
+		send "&c- /game <data-id> <text|number> <value> &6(Developer)%nl%&c- /setTeam <player> <blue/red> &6(Administrator)%nl%&c- /getGun <player> <gun> &6(Developer)%nl%&c- /giveExp <player> <amount> [reason] &6(Developer)%nl%&c- /setAmmo <player> <ammo> &6(Developer)%nl%&c- /cleanSomething &6(Developer)%nl%&c- /heal <player> &6(Administrator)%nl%&c- /restartGame &6(Administrator)%nl%&c- /setGamemode <FFA/TDM/RANDOM> &6(Administrator)%nl%&c- /resetUser <player> [DATA/GUNS/ALL] &6(Developer)" to executor
+
+command /game [<text>] [<text>] [<text>]:
+	trigger:
+		if executor doesn't have permission "server.developer":
 			send "&cYou are not allowed to use this command!" to executor
 			stop
 		if arg 1 or arg 2 or arg 3 is not set:
@@ -44,6 +52,8 @@ command /setTeam [<offline player>] [<text>]:
 			send "&cUsage: /setTeam <player> <blue/red>" to executor
 			stop
 		set {-playerTeam::%arg 1%} to api_toUpperCase(arg 2)
+		entity_updateTab(arg 1)
+		entity_getTeamArmor(arg 1)
 		send "&aYou have set &6%arg 1%&a's team to &6%api_toUpperCase(arg 2)%&a!" to executor
 
 command /getGun [<offline player>] [<text>]:
@@ -62,13 +72,16 @@ command /getGun [<offline player>] [<text>]:
 		gunSelect_getGun(arg 1, "ALL", {_gunID}, (current hotbar slot of executor))
 		send "&aYou have set &6%arg 1%&a's held slot to &6%{_gunID}%&a!" to executor
 
-command /giveExp [<player>] [<number>] [<text>]:
+command /giveExp [<offline player>] [<number>] [<text>]:
 	trigger:
-		if executor doesn't have permission "server.administrator":
+		if executor doesn't have permission "server.developer":
 			send "&cYou are not allowed to use this command!" to executor
 			stop
 		if arg 1 or arg 2 is not set:
 			send "&cUsage: /giveExp <player> <amount> [reason]" to executor
+			stop
+		if arg 1 is not online:
+			send "&cThe player is not online!" to executor
 			stop
 		if arg 3 is set:
 			set {_reason} to arg 3
@@ -77,9 +90,9 @@ command /giveExp [<player>] [<number>] [<text>]:
 		guns_addExp(arg 1, arg 2, {_reason})
 		send "&aYou added &6%arg 2%&a exp into &6%arg 1%&a's account for &6%{_reason}%&a!" to executor
 
-command /setAmmo [<player>] [<number>]:
+command /setAmmo [<offline player>] [<number>]:
 	trigger:
-		if executor doesn't have permission "server.administrator":
+		if executor doesn't have permission "server.developer":
 			send "&cYou are not allowed to use this command!" to executor
 			stop
 		if arg 1 or arg 2 is not set:
@@ -93,9 +106,15 @@ command /setAmmo [<player>] [<number>]:
 		set {-gunAmmo::%{_ID}%} to arg 2
 		send "&aYou set &6%arg 1%&a's &f%{_targetTool}'s name% &aammo amount to &6%arg 2%&a!" to executor
 
-command /gunSelector:
+command /cleanSomething:
 	trigger:
-		gunSelect_new(executor)
+		if executor doesn't have permission "server.developer":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		kill all armor stands
+		kill all area effect clouds
+		hpBar_reload()
+		send "&aCleaned things for the server!" to executor
 
 command /heal [<offline player>]:
 	trigger:
@@ -109,6 +128,65 @@ command /heal [<offline player>]:
 			send "&cPlayer is not online!" to executor
 			stop
 		entity_heal(arg 1)
+
+command /restartGame:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		send "&c&lSYSTEM: &c&nAn administrator has forced the game to restart!" to all players
+		game_end()
+		game_lobbyData()
+
+command /setGamemode [<text>]:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /setGamemode <FFA/TDM/RANDOM>" to executor
+			stop
+		if arg 1 is not "FFA" or "TDM" or "RANDOM":
+			send "&cUsage: /setGamemode <FFA/TDM/RANDOM>" to executor
+			stop
+		if {-gameData::status} is not "WAITING" or "STARTING":
+			send "&cYou are only allowed to set gamemode before game start!" to executor
+			stop
+		if {-gameData::gamemode} is arg 1:
+			send "&cCurrent gamemode is already set to %{-gameData::gamemode}%!" to executor
+			stop
+		set {-gameData::gamemode} to api_toUpperCase(arg 1)
+		send "&c&lSYSTEM: &c&nAn administrator has set gamemode for next round to %{-gameData::gamemode}%!" to all players
+
+command /gunSelector:
+	trigger:
+		gunSelect_new(executor)
+
+command /resetUser [<offline player>] [<text>]:
+	trigger:
+		if executor is not a op:
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /resetUser <player> [DATA/GUNS/ALL]" to executor
+			stop
+		if arg 2 is set:
+			game_resetData(arg 1, arg 2)
+		else:
+			game_resetData(arg 1)
+		send "&aCleared user %arg 1%'s data!" to executor
+
+command /boosters:
+	trigger:
+		send "&aBoosters:" to executor
+		set {_boostersRaw::*} to cubedAPI_getBoosters("czB8AfsOHGui41m729J3ToxCMXabNpLk22295", true)
+		loop {_boostersRaw::*}:
+			set {_loopBoosterData::*} to {_boostersRaw::%loop-index%} split by ":"
+			set {_boosterNames::*} to api_getPlayerName({_loopBoosterData::1}, false)
+			set {_boosterNamesAmount} to amount of {_boosterNames::*}
+			set {_boosterName} to {_boosterNames::%{_boosterNamesAmount}%}
+			set {_boostTimeRaw} to (({_loopBoosterData::2} parsed as number) / 1000)
+			set {_boostTime} to api_unixToDate({_boostTimeRaw})
+			send "&a- &e%{_boosterName}% &a(&e%{_boostTime}%&a)" to executor
 
 on step on a pressure plate:
 	if {-gameData::status} is "STARTED":
@@ -134,12 +212,14 @@ on script load:
 
 on place:
 	if player has permission "server.administrator":
-		stop
+		if player's gamemode is creative:
+			stop
 	cancel event
 
 on break:
 	if player has permission "server.administrator":
-		stop
+		if player's gamemode is creative:
+			stop
 	cancel event
 
 on chat:
@@ -163,19 +243,6 @@ on inventory click:
 	if player's gamemode is creative:
 		stop
 	cancel event
-
-command /reset-data [<offline player>] [<text>]:
-	trigger:
-		if executor is not a op:
-			stop
-		if arg 1 is not set:
-			send "&cUsage: /reset-data <player> [DATA/GUNS/ALL]" to executor
-			stop
-		if arg 2 is set:
-			game_resetData(arg 1, arg 2)
-		else:
-			game_resetData(arg 1)
-		send "&aCleared user %arg 1%'s data!" to executor
 
 on script unload:
 	loop all players:
@@ -344,11 +411,12 @@ function game_start():
 	set {-gameData::status} to "STARTED"
 	set {-gameData::countdown} to (60 * 5) # Countdown: 5 minutes
 	set {-gameData::map} to "DEFAULT"
-	set {_randomMapNumber} to random integer between 1 and 100
-	if {_randomMapNumber} <= 50:
-		set {-gameData::gamemode} to "TDM"
-	else:
-		set {-gameData::gamemode} to "FFA"
+	if {-gameData::gamemode} is "RANDOM":
+		set {_randomMapNumber} to random integer between 1 and 100
+		if {_randomMapNumber} <= 50:
+			set {-gameData::gamemode} to "TDM"
+		else:
+			set {-gameData::gamemode} to "FFA"
 	game_addTeamAll()
 	loop all players:
 		if {-lastTeleport::%loop-player%} is not set:
@@ -394,7 +462,7 @@ function game_lobbyData():
 	game_deleteDataAll()
 	set {-gameData::status} to "WAITING"
 	set {-gameData::countdown} to 21 # Start game countdown: 20 seconds (1 second extra)
-	set {-gameData::gamemode} to "TDM"
+	set {-gameData::gamemode} to "RANDOM"
 	set {-gameData::map} to "DEFAULT"
 	game_updateTabAll()
 	loop all players:
