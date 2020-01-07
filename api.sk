@@ -74,7 +74,7 @@ function api_getNumberDecimalDisplay(number: number) :: text:
 			set {_display} to "%{_numberSplit::%{_reversedNumber}%}%%{_display}%"
 	return {_display}
 
-function api_UnixToDate(UNIX: number) :: date:
+function api_unixToDate(UNIX: number) :: date:
 	set {_date} to date(1970,1,1)
 	if {_UNIX} > 0:
 		add ("%{_UNIX}% seconds" parsed as time span) to {_date}
