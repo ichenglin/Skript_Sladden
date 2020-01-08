@@ -1,310 +1,839 @@
-function gunSelect_addDataGun(type: text, unlockLevel: number, item: item):
-	add {_item} to {-guns_%{_type}%::*}
-	set {_selectID} to uncolored ({_item}'s name)
-	set {_selectID} to api_toUpperCase({_selectID})
-	replace all " " with "_" in {_selectID}
-	set {-gunUnlocklevel::%{_selectID}%} to {_unlockLevel}
-
-function gunSelect_addDataAttachment(attachmentType: text, forGunType: text, item: item):
-	add {_item} to {-gunAttachmentList_%{_attachmentType}%::*}
-	set {_itemName} to {_item}'s name
-	set {-gunAttachmentGunList::%{_itemName}%} to {_forGunType}
-
-function gunSelect_new(player: player):
-	gunSelect_open({_player}, "PRIMARY", "ASSAULT_RIFLE")
-
-function gunSelect_open(player: player, type: text = "PRIMARY", type2: text = "UNKNOWN"):
-	if {_type2} is "UNKNOWN":
-		if {_type} is "PRIMARY":
-			set {_type2} to "ASSAULT_RIFLE"
-		else if {_type} is "SECONDARY":
-			set {_type2} to "PISTOL"
-	operator_sendDebug("Access Selector: %{_type}% -> %{_type2}%")
-	set {_selectID} to uncolored {_type2}
-	set {_selectID} to api_toUpperCase({_selectID})
-	replace all " " with "_" in {_selectID}
-	set {-playerSelectType1::%{_player}%} to {_type}
-	set {-playerSelectType2::%{_player}%} to {_selectID}
-	open chest with 5 row named "&cSelect Gun" to {_player}
-	gunSelect_addType({_player}, 36, "PRIMARY")
-	gunSelect_addType({_player}, 37, "SECONDARY")
-	format a gui slot 38 of {_player} with stained glass:0 named "&7" with lore "" to do nothing
-	if {_type} is "PRIMARY":
-		gunSelect_addSelector({_player}, 39, "&aAssault Rifle", {_type})
-		gunSelect_addSelector({_player}, 40, "&aPDW", {_type})
-		gunSelect_addSelector({_player}, 41, "&aLMG", {_type})
-		gunSelect_addSelector({_player}, 42, "&aDMR", {_type})
-		gunSelect_addSelector({_player}, 43, "&aShotgun", {_type})
-		gunSelect_addSelector({_player}, 44, "&aSniper Rifle", {_type})
-	else if {_type} is "SECONDARY":
-		gunSelect_addSelector({_player}, 39, "&aPistol", {_type})
-		gunSelect_addSelector({_player}, 40, "&aMachine Pistol", {_type})
-		gunSelect_addSelector({_player}, 41, "&aRevolver", {_type})
-		gunSelect_addSelector({_player}, 42, "&aOther", {_type})
-		gunSelect_addSelector({_player}, 44, "&aLimited Time", {_type})
-	set {_slot} to 0
-	loop 9 times:
-		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
-		add 1 to {_slot}
-	set {_slot} to 27
-	loop 9 times:
-		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
-		add 1 to {_slot}
-	set {_slot} to 9
-	set {_gunList::*} to {-guns_%{_selectID}%::*}
-	loop {_gunList::*}:
-		gunSelect_addGun({_player}, {_slot}, {-guns_%{_selectID}%::%loop-index%}, {_type}, {_selectID})
-		add 1 to {_slot}
-
-function gunSelect_openAttachments(player: player, item: item, attachmentType: text = "OTHER"):
-	set {-playerAttachmentSelect::%{_player}%} to {_attachmentType}
-	open chest with 5 row named "&cEdit Attachments: %{_item}'s name%" to {_player}
-	set {_slot} to 0
-	loop 9 times:
-		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
-		add 1 to {_slot}
-	set {_slot} to 27
-	loop 9 times:
-		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
-		add 1 to {_slot}
-#	gunSelect_addAttachmentSelector({_player}, {_item}, 36, "&aOptic")
-#	gunSelect_addAttachmentSelector({_player}, {_item}, 37, "&aBarrel")
-#	gunSelect_addAttachmentSelector({_player}, {_item}, 38, "&aUnderbarrel")
-#	gunSelect_addAttachmentSelector({_player}, {_item}, 39, "&aOther")
-	gunSelect_addAttachmentSelector({_player}, {_item}, 36, "&aBarrel")
-	gunSelect_addAttachmentSelector({_player}, {_item}, 37, "&aUnderbarrel")
-	gunSelect_addAttachmentSelector({_player}, {_item}, 38, "&aOther")
-	format a gui slot 9 of {_player} with stained glass:4 named "&aDefault" with lore "" to close then run function gunSelect_selectAttachmentDefault({_player}, {_item}, {_attachmentType})
-	set {_attachmentSlot} to 10
-	loop {-gunAttachmentList_%{_attachmentType}%::*}:
-		set {_attachment} to {-gunAttachmentList_%{_attachmentType}%::%loop-index%}
-		set {_attachmentName} to {_attachment}'s name
-		set {_forGunType} to {-gunAttachmentGunList::%{_attachmentName}%}
-		gunSelect_addAttachment({_player}, {_attachmentSlot}, {_attachment}, {_item}, {_forGunType}, {_attachmentType})
-		add 1 to {_attachmentSlot}
-
-function gunSelect_addType(player: player, slot: number, type: text):
-	if {_type} is "PRIMARY":
-		set {_display} to "&aPrimary Weapons"
-	else if {_type} is "SECONDARY":
-		set {_display} to "&aSecondary Weapons"
-	if {-playerSelectType1::%{_player}%} is {_type}:
-		format a gui slot {_slot} of {_player} with stained clay:5 named "%{_display}%" with lore "&aSELECTED" to do nothing
-	else:
-		format a gui slot {_slot} of {_player} with stained clay:14 named "%{_display}%" with lore "&eClick to select" to close then run function gunSelect_selectType({_player}, {_type})
-
-function gunSelect_addSelector(player: player, slot: number, itemName: text, type: text):
-	if {-playerSelectType1::%{_player}%} is not {_type}:
+function guns_holdRightMouse(player: player, tool: item):
+	if {-isReloading::%{_player}%} is set:
 		stop
-	set {_selectID} to uncolored {_itemName}
-	set {_selectID} to api_toUpperCase({_selectID})
-	replace all " " with "_" in {_selectID}
-	if {-playerSelectType2::%{_player}%} is {_selectID}:
-		format a gui slot {_slot} of {_player} with stained clay:5 named "%{_itemName}%" with lore "&aSELECTED" to do nothing
-	else:
-		format a gui slot {_slot} of {_player} with stained clay:14 named "%{_itemName}%" with lore "&eClick to select" to close then run function gunSelect_open({_player}, {_type}, {_selectID})
 
-function gunSelect_addAttachmentSelector(player: player, item: item, slot: number, selectorName: text):
-	set {_selectID} to uncolored {_selectorName}
-	set {_selectID} to api_toUpperCase({_selectID})
-	replace all " " with "_" in {_selectID}
-	if {-playerAttachmentSelect::%{_player}%} is {_selectID}:
-		format a gui slot {_slot} of {_player} with stained clay:5 named "%{_selectorName}%" with lore "&aSELECTED" to do nothing
-	else:
-		format a gui slot {_slot} of {_player} with stained clay:14 named "%{_selectorName}%" with lore "&eClick to select" to close then run function gunSelect_openAttachments({_player}, {_item}, {_selectID})
-
-function gunSelect_addGun(player: player, slot: number, item: item, type: text, type2: text):
-	set {_selectID} to uncolored {_type2}
-	set {_selectID} to api_toUpperCase({_selectID})
-	replace all " " with "_" in {_selectID}
-	set {_gunID} to uncolored {_item}'s name
-	set {_gunID} to api_toUpperCase({_gunID})
-	replace all " " with "_" in {_gunID}
-	set {_itemDisplayName} to "%{_item}'s name% &e(Level %{-gunUnlocklevel::%{_gunID}%}%)"
-	set {_requireCredits} to ((({-gunUnlocklevel::%{_gunID}%} - {-playerStatLevel::%{_player}%}) * 140) + 700)
-	set {_itemDisplayLoreLocked} to "&cLOCKED||&cUnlock with &6level %{-gunUnlocklevel::%{_gunID}%}% &cor &6%{_requireCredits}% credits||&eClick to purchase with credits||||%{_item}'s lore%"
-	set {_itemDisplayLoreUnlocked} to "&eLeft-Click to Select||&eRight-Click to Edit Attachments||||%{_item}'s lore%"
-	set {_itemDisplayLoreSelected} to "&aSELECTED||&eRight-Click to Edit Attachments||||%{_item}'s lore%"
-	if {-gunUnlocklevel::%{_gunID}%} > {-playerStatLevel::%{_player}%}:
-		if {weaponUnlocked::%{_player}%.%{_gunID}%} is not set:
-			set {_weaponLocked} to true
-	set {_weaponItem} to {_item}
-	if {_weaponLocked} is true:
-		set {_weaponItem} to stained glass:14 named "&cError" with lore "&cAn error has occured,||&cplease report this to an administrator!"
-	set {_weaponItem} to {_weaponItem} named {_itemDisplayName}
-	if {_type} is "PRIMARY":
-		set {_selectedGun} to {-playerSelectType3::%{_player}%}
-	else if {_type} is "SECONDARY":
-		set {_selectedGun} to {-playerSelectType4::%{_player}%}
-	if {_weaponLocked} is true:
-		set {_weaponItem} to {_weaponItem} with lore {_itemDisplayLoreLocked}
-	else if {_selectedGun} is {_gunID}:
-		set {_weaponItem} to glowing {_weaponItem} with lore {_itemDisplayLoreSelected}
-		set {_weaponSelected} to true
-	else:
-		set {_weaponItem} to {_weaponItem} with lore {_itemDisplayLoreUnlocked}
-	if {_weaponLocked} is true:
-		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_buyGunRequest({_player}, {_item}, {_gunID})
-	else if {_weaponSelected} is true:
-		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_openAttachments({_player}, {_item}) with "right" click
-	else:
-		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_selectGun({_player}, {_type}, {_selectID}, {_gunID}) with "left" click
-		format a gui slot {_slot} of {_player} with {_weaponItem} to close then run function gunSelect_openAttachments({_player}, {_item}) with "right" click
-
-function gunSelect_addAttachment(player: player, slot: number, item: item, currentSelectedGun: item, forGunType: text, attachmentType: text):
-	set {_weaponType} to guns_getGunType({_currentSelectedGun})
-	set {_weaponLore} to {_item}'s lore
-	if {_forGunType} is "ALL":
-		set {_weaponLore} to "&f||%{_weaponLore}%"
-		set {_access} to true
-	else if {_weaponType} is {_forGunType}:
-		set {_weaponLore} to "&f||%{_weaponLore}%"
-		set {_access} to true
-	else:
-		set {_weaponLore} to "&f||&cThis attachment is not available for %{_currentSelectedGun}'s name%&c!||&f||%{_weaponLore}%"
-		set {_access} to false
-	set {_attachmentFullID} to "%{_player}'s UUID%.%{_currentSelectedGun}'s name%"
-	loop {-selectedAttachment::%{_attachmentFullID}%::*}:
-		if {-selectedAttachment::%{_attachmentFullID}%::%loop-index%} is {_item}:
-			set {_weaponLore} to "&aSELECTED%{_weaponLore}%"
-			set {_selected} to true
-
-	set {_displayItem} to {_item} with lore {_weaponLore}
-	if {_access} is true:
-		if {_selected} is true:
-			format a gui slot {_slot} of {_player} with glowing {_displayItem} to close then run function gunSelect_selectAttachment({_player}, {_currentSelectedGun}, {_item}, {_attachmentType})
-		else:
-			format a gui slot {_slot} of {_player} with {_displayItem} to close then run function gunSelect_selectAttachment({_player}, {_currentSelectedGun}, {_item}, {_attachmentType})
-	else:
-		format a gui slot {_slot} of {_player} with {_displayItem} to do nothing
-
-function gunSelect_selectAttachment(player: player, weapon: item, attachment: item, attachmentType: text):
-	if {_attachmentType} is "OPTIC":
-		set {_attachmentTypeID} to 1
-	else if {_attachmentType} is "BARREL":
-		set {_attachmentTypeID} to 2
-	else if {_attachmentType} is "UNDERBARREL":
-		set {_attachmentTypeID} to 3
-	else if {_attachmentType} is "OTHER":
-		set {_attachmentTypeID} to 4
-	set {_attachmentFullID} to "%{_player}'s UUID%.%{_weapon}'s name%"
-	set {-selectedAttachment::%{_attachmentFullID}%::%{_attachmentTypeID}%} to {_attachment}
-	send "&eSelected attachment &a%uncolored {_attachment}'s name% &efor &a%uncolored {_weapon}'s name%&e!" to {_player}
-	gunSelect_openAttachments({_player}, {_weapon}, {_attachmentType})
-
-function gunSelect_selectAttachmentDefault(player: player, weapon: item, attachmentType: text):
-	if {_attachmentType} is "OPTIC":
-		set {_attachmentTypeID} to 1
-	else if {_attachmentType} is "BARREL":
-		set {_attachmentTypeID} to 2
-	else if {_attachmentType} is "UNDERBARREL":
-		set {_attachmentTypeID} to 3
-	else if {_attachmentType} is "OTHER":
-		set {_attachmentTypeID} to 4
-	set {_attachmentFullID} to "%{_player}'s UUID%.%{_weapon}'s name%"
-	delete {-selectedAttachment::%{_attachmentFullID}%::%{_attachmentTypeID}%}
-	send "&eSelected attachment &aDefault &efor &a%uncolored {_weapon}'s name%&e!" to {_player}
-	gunSelect_openAttachments({_player}, {_weapon}, {_attachmentType})
-
-function gunSelect_buyGunRequest(player: player, shopItem: item, gunID: text):
-	set {_requireCredits} to ((({-gunUnlocklevel::%{_gunID}%} - {-playerStatLevel::%{_player}%}) * 140) + 700)
-	open chest with 5 row named "&cConfirm purchase: %{_shopItem}'s name% &c(%{_requireCredits}% Credits)" to {_player}
-	format a gui slot 13 of {_player} with {_shopItem} to do nothing
-	format a gui slot 29 of {_player} with stained clay:5 named "&aPurchase" with lore "&eClick to confirm the purchase!" to close then run function gunSelect_buyGun({_player}, {_shopItem}, {_gunID})
-	format a gui slot 33 of {_player} with stained clay:14 named "&cCancel" with lore "&eClick to cancel the purchase!" to close then run function gunSelect_cancelPurchase({_player})
-
-function gunSelect_buyGun(player: player, shopItem: item, gunID: text):
-	set {_requireCredits} to ((({-gunUnlocklevel::%{_gunID}%} - {-playerStatLevel::%{_player}%}) * 140) + 700)
-	if {_requireCredits} <= {-playerStatCredit::%{_player}%}:
-		remove {_requireCredits} from {-playerStatCredit::%{_player}%}
-		send "&aYou have successfully purchased %{_shopItem}'s name%&a!" to {_player}
-		send "&c-%{_requireCredits}% Credits (Shop)" to {_player}
-		set {weaponUnlocked::%{_player}%.%{_gunID}%} to now
-		game_updateDisplay({_player})
-		stop
-	send "&cYou need %({_requireCredits} - {-playerStatCredit::%{_player}%})% more credits to purchase this item!" to {_player}
-
-function gunSelect_cancelPurchase(player: player):
-	send "&cYou have canceled the purchase!" to {_player}
-
-function gunSelect_selectType(player: player, type: text):
-	set {-playerSelectType1::%{_player}%} to {_type}
-	if {_type} is "PRIMARY":
-		set {-playerSelectType2::%{_player}%} to "ASSAULT_RIFLE"
-		gunSelect_open({_player}, {_type}, "ASSAULT_RIFLE")
-	else:
-		gunSelect_open({_player}, {_type}, "UNKNOWN")
-
-function gunSelect_selectGun(player: player, type: text, selectID: text, gunID: text):
-	set {-playerSelectType1::%{_player}%} to {_type}
-	set {-playerSelectType2::%{_player}%} to {_selectID}
-	if {-playerSelectType1::%{_player}%} is "PRIMARY":
-		set {-playerSelectType3::%{_player}%} to {_gunID}
-		set {-playerSelectType3Select::%{_player}%} to {_selectID}
-		operator_sendDebug("Select Weapon: %{-playerSelectType1::%{_player}%}% -> %{-playerSelectType2::%{_player}%}% -> %{-playerSelectType3::%{_player}%}%")
-		set {_gun} to {-playerSelectType3::%{_player}%}
-	else:
-		set {-playerSelectType4::%{_player}%} to {_gunID}
-		set {-playerSelectType4Select::%{_player}%} to {_selectID}
-		operator_sendDebug("Select Weapon: %{-playerSelectType1::%{_player}%}% -> %{-playerSelectType2::%{_player}%}% -> %{-playerSelectType4::%{_player}%}%")
-		set {_gun} to {-playerSelectType4::%{_player}%}
-	send "&eYou have selected &a%{_gun}%&e!%nl%&eYou will have it as your &a%{-playerSelectType1::%{_player}%}% &eweapon on next respawn!" to {_player}
-	gunSelect_open({_player}, {_type}, {_selectID})
-
-function gunSelect_getSelectedGuns(player: player, slot: number, type: text = "PRIMARY"):
-	if {_type} is "PRIMARY":
-		set {_selectedGunChannel} to 3
-		set {_defaultWeapon} to "ASSAULT_RIFLE"
-		set {_defaultWeaponDisplay} to "AK12"
-	else if {_type} is "SECONDARY":
-		set {_selectedGunChannel} to 4
-		set {_defaultWeapon} to "PISTOL"
-	if {-playerSelectType%{_selectedGunChannel}%::%{_player}%} is not set:
-		set {_ID} to "%{_player}%.%{-guns_%{_defaultWeapon}%::1}'s name%"
-		set {_datas::*} to guns_getStats({_player}, {-guns_%{_defaultWeapon}%::1})
-		set {-gunAmmo::%{_ID}%} to ("%{_datas::10}%" parsed as number)
-		set slot {_slot} of {_player}'s inventory to {-gunAmmo::%{_ID}%} of {-guns_%{_defaultWeapon}%::1}
-		set {-playerSelectType%{_selectedGunChannel}%::%{_player}%} to {_defaultWeaponDisplay}
-		set {-playerSelectType%{_selectedGunChannel}%Select::%{_player}%} to {_defaultWeapon}
-		operator_sendDebug("Receive Weapon: %{_player}% -> DEFAULT")
-	else:
-		set {_loopGuns::*} to {-guns_%{-playerSelectType%{_selectedGunChannel}%Select::%{_player}%}%::*}
-		operator_sendDebug("Receive Weapon: (%{_player}%) %{-playerSelectType%{_selectedGunChannel}%Select::%{_player}%}% -> [%{_loopGuns::*}%]")
-		loop {_loopGuns::*}:
-			set {_selectID} to uncolored ({_loopGuns::%loop-index%}'s name)
-			set {_selectID} to api_toUpperCase({_selectID})
-			replace all " " with "_" in {_selectID}
-			operator_sendDebug("Search Weapon: (%{_player}%) %{_selectID}% -> %{-playerSelectType%{_selectedGunChannel}%::%{_player}%}%")
-			if {_selectID} is {-playerSelectType%{_selectedGunChannel}%::%{_player}%}:
-				set {_ID} to "%{_player}%.%{_loopGuns::%loop-index%}'s name%"
-				set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
-				set {-gunAmmo::%{_ID}%} to ("%{_datas::10}%" parsed as number)
-				set slot {_slot} of {_player}'s inventory to {-gunAmmo::%{_ID}%} of {_loopGuns::%loop-index%}
-				operator_sendDebug("Ammo Refill: (%{_player}%) %{-gunAmmo::%{_ID}%}% -> %{_datas::*}%")
-				exit 1 loop
-
-function gunSelect_getGun(player: player, gunType: text, gunID: text, inventorySlot: number):
-	if {_gunType} is "ALL":
-		add "ASSAULT_RIFLE" and "PDW" and "LMG" and "CARBINE" and "DMR" and "SHOTGUN" and "SNIPER_RIFLE" and "PISTOL" and "MACHINE_PISTOL" or "REVOLVER" or "OTHER" or "PROTOTYPE" to {_allGunTypes::*}
-		loop (amount of {_allGunTypes::*}) times:
-			set {_loopGuns::*} to {-guns_%{_allGunTypes::%loop-number%}%::*}
-			loop {_loopGuns::*}:
-				set {_selectID} to uncolored ({_loopGuns::%loop-index%}'s name)
-				set {_selectID} to api_toUpperCase({_selectID})
-				replace all " " with "_" in {_selectID}
-				if {_selectID} is {_gunID}:
-					set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
-					set slot {_inventorySlot} of {_player} to {_datas::10} of {_loopGuns::%loop-index%}
-					guns_setFullAmmo({_player}, {_loopGuns::%loop-index%})
-					stop
-	else:
-		set {_loopGuns::*} to {-guns_%{_gunType}%::*}
-		loop {_loopGuns::*}:
-			set {_selectID} to uncolored ({_loopGuns::%loop-index%}'s name)
-			set {_selectID} to api_toUpperCase({_selectID})
-			replace all " " with "_" in {_selectID}
-			if {_selectID} is {_gunID}:
-				set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
-				set slot {_inventorySlot} of {_player} to {_datas::10} of {_loopGuns::%loop-index%}
-				guns_setFullAmmo({_player}, {_loopGuns::%loop-index%})
+	if item_hasSpecialStat({_tool}, "Single-Shot") is true:
+		if {-playerShootDelay::%{_player}%} is set:
+			if {-playerShootDelay::%{_player}%} > now:
 				stop
+
+	if {-holdRightMouse::%{_player}%} is not set:
+		set {-holdRightMouse::%{_player}%} to 1
+		set {_currentRightMouseStage} to 1
+	else if {-holdRightMouse::%{_player}%} <= 0:
+		stop
+	else:
+		add 1 to {-holdRightMouse::%{_player}%}
+		set {_currentRightMouseStage} to {-holdRightMouse::%{_player}%}
+
+	if {_tool} is diamond hoe or iron hoe:
+		set {_actionType} to "ZOOM"
+#	else:
+#		set {_actionType} to "SHOOT"
+
+	if {-playerRightMouseAction::%{_player}%} is not {_actionType}:
+		set {-holdRightMouseStartTime::%{_player}%} to now
+		operator_sendDebug("RightClick Toggle -> %{_player}% -> ButtonDown")
+#		set {_isFirst} to true
+
+	if {_actionType} is "ZOOM":
+		apply slowness 5 to {_player} for 9999999 seconds ambient false hide particle true
+		send title "&7" with subtitle "&aLeft-Click &eto fire" to {_player} for 0.45 seconds with 0 tick fadein and 0 tick fadeout
+#	else:
+#		guns_shootWithStats({_player}, {_tool})
+
+	if {-playerRightMouseAction::%{_player}%} is not "ZOOM_COOLDOWN":
+		set {-playerRightMouseAction::%{_player}%} to {_actionType}
+
+#	if {_isFirst} is true:
+#		if {_actionType} is "SHOOT":
+#			guns_runShoot({_player}, {_tool})
+
+	wait 10 ticks
+	if {-holdRightMouse::%{_player}%} is {_currentRightMouseStage}:
+		delete {-holdRightMouse::%{_player}%}
+		delete {-playerRightMouseAction::%{_player}%}
+		if {_actionType} is "ZOOM":
+			remove slowness from {_player}
+		operator_sendDebug("RightClick Toggle -> %{_player}% -> ButtonUp")
+	else:
+		stop
+
+function guns_zoomShoot(player: player, tool: item):
+	if {-playerRightMouseAction::%{_player}%} is not set:
+		guns_shootWithStats({_player}, {_tool}, 0.1, 0.2)
+		stop
+	if {-playerRightMouseAction::%{_player}%} is not "ZOOM":
+		stop
+	if (difference between {-holdRightMouseStartTime::%{_player}%} and now) <= ("0.2 seconds" parsed as time span):
+		stop
+	guns_shootWithStats({_player}, {_tool})
+	if item_hasSpecialStat({_tool}, "Single-Shot") is true:
+		set {-playerRightMouseAction::%{_player}%} to "ZOOM_COOLDOWN"
+		remove slowness from {_player}
+		wait 10 ticks
+		delete {-playerRightMouseAction::%{_player}%}
+
+function guns_use(shooter: entity, shootLocation: location, weapon: item, damage: number, projectileRange: number, ProjectileRadius: number, ProjectilePiercing: number, ProjectileBurst: number, recoil: number, accuracy: number, firerate: number, ammoCapacity: number, headMultiplier: number = 1.8, bodyMultiplier: number = 1.2):
+
+	set {_playerSelectedSlot} to current hotbar slot of {_shooter}
+
+	if {-isReloading::%{_shooter}%} is set:
+		stop
+
+	set {_ID} to "%{_shooter}%.%{_weapon}'s name%"
+
+	if {-gunAmmo::%{_ID}%} is not set:
+		guns_reloadGun({_shooter}, {_weapon})
+		stop
+
+	if {-gunAmmo::%{_ID}%} <= 0:
+		guns_reloadGun({_shooter}, {_weapon})
+		stop
+
+	if {-playerShootDelay::%{_shooter}%} is set:
+		if {-playerShootDelay::%{_shooter}%} > now:
+			stop
+
+	set {_loopTimes} to ceil({_ firerate} / 150)
+	set {_delay} to ("%(0.4 / {_loopTimes})% seconds" parsed as time span)
+
+	if {_ firerate} < 150:
+		set {_shootDelay} to (0.35 * (150 / {_ firerate}))
+	else:
+		set {_shootDelay} to 0.35
+	set {_nextShotTime} to now
+	add ("%{_shootDelay}% seconds" parsed as time span) to {_nextShotTime}
+	set {-playerShootDelay::%{_shooter}%} to {_nextShotTime}
+	guns_displayCooldown({_shooter},  {_shootDelay})
+
+	set {-playerLastShot::%{_shooter}%} to now
+
+	set {_weaponType} to guns_getGunType({_weapon})
+
+	if {_weaponType} is "SHOTGUN":
+		set {_fireSound} to "minecraft:entity.zombie.break_door_wood"
+		set {_soundPitch} to 1.8
+	else if {_weaponType} is "SNIPER_RIFLE":
+		set {_fireSound} to "minecraft:entity.generic.explode"
+		set {_soundPitch} to 2
+	else:
+		set {_fireSound} to "entity.irongolem.hurt"
+		set {_soundPitch} to 2
+
+	loop {_loopTimes} times:
+
+		if {-gunAmmo::%{_ID}%} <= 0:
+			guns_reloadGun({_shooter}, {_weapon})
+			stop
+		else:
+			remove 1 from {-gunAmmo::%{_ID}%}
+			if {-gunAmmo::%{_ID}%} > 0:
+				set slot {_playerSelectedSlot} of {_shooter}'s inventory to {-gunAmmo::%{_ID}%} of {_weapon}
+			else:
+				set slot {_playerSelectedSlot} of {_shooter}'s inventory to {_weapon}
+			send actionbar "&c%uncolored {_weapon}'s name% &f- &c[%{-gunAmmo::%{_ID}%}% / %{_ammoCapacity}%]" to ("%{_shooter}%" parsed as player)
+
+		guns_playsound(({_shooter}'s location), {_fireSound}, {_soundPitch})
+		loop {_ProjectileBurst} times:
+			guns_registerShot({_shooter}, {_shootLocation}, {_damage}, {_projectileRange}, {_projectileRadius}, {_projectilePiercing}, {_projectileBurst}, {_recoil}, {_accuracy})
+
+		if {-gunAmmo::%{_ID}%} <= 0:
+			guns_reloadGun({_shooter}, {_weapon})
+			stop
+
+		wait {_delay}
+
+function guns_displayCooldown(player: player, cooldownTimeInSeconds: number):
+	set {_cooldownDisplayPerTime} to ("%({_cooldownTimeInSeconds} / 10)% seconds" parsed as time span)
+	set {_player}'s exp to 0
+	loop 10 times:
+		set level progress of {_player} to ((loop-number / 10) - 0.01)
+		wait {_cooldownDisplayPerTime}
+	set {_player}'s exp to 0
+
+function guns_melee(attacker: player, victim: entity, weapon: item, damage: number, backstabMultiplier: number = 1.8):
+
+	if {_victim} is a armor stand:
+		stop
+
+	set {_attackerYaw} to {_attacker}'s yaw
+	set {_victimYaw} to {_victim}'s yaw
+
+	set {_yawDifference} to (difference between {_attackerYaw} and {_victimYaw})
+
+	if {_yawDifference} < 90:
+		set {_backstabCheck} to true
+	else if {_yawDifference} > 180:
+		set {_backstabCheck} to true
+
+	if {_backstabCheck} is true:
+		set {_finalDamage} to ({_damage} * {_backstabMultiplier})
+		set {_displaySuffix} to " &7&o[ʙᴀᴄᴋsᴛᴀʙ]"
+		set {_isBackstab} to true
+	else:
+		set {_finalDamage} to {_damage}
+		set {_displaySuffix} to ""
+		set {_isBackstab} to false
+
+	entity_damage({_attacker}, {_victim}, {_finalDamage}, {_weapon}, false, {_isBackstab}, false, true, {_displaySuffix})
+
+function guns_registerShot(shooter: entity, shootLocation: location, damage: number, projectileRange: number, ProjectileRadius: number, ProjectilePiercing: number, ProjectileBurst: number, recoil: number, accuracy: number, headMultiplier: number = 1.8, bodyMultiplier: number = 1.2):
+
+	set {_weapon} to {_shooter}'s tool
+
+	guns_recoil({_shooter}, {_recoil}, true)
+
+	set {_weaponType} to guns_getGunType({_weapon})
+
+	set {_shootLocation} to guns_applyAccuracy({_shootLocation}, {_accuracy})
+	set {_halfRange} to ({_projectileRange} / 2)
+
+	remove glowing from {_shooter}
+	apply potion of glowing of tier 1 to {_shooter} for 5 seconds
+	set {-showOnRadar::%{_shooter}%} to 5
+
+	# drawDot particle "snowball", center {_shootLocation}, visibleRange 100
+
+	set {_wallBangBullet} to false
+
+	loop {_projectileRange} times:
+		set {_shootLocation} to location 1 meter infront of {_shootLocation}
+		
+		if loop-number > {_halfRange}:
+			set {_rangeDamage} to ({_damage} * 0.8)
+		else:
+			set {_percentage} to (loop-number / {_halfRange})
+			set {_rangeDamage} to ({_damage} - (({_damage} * 0.2) * {_percentage}))
+
+		set {_hitEntities::*} to guns_checkHitContact({_shootLocation}, {_ProjectileRadius})
+
+		drawDot particle "fireworkspark", center {_shootLocation}, visibleRange 100
+
+		if block at {_shootLocation} != air or water or sapling or sign or torch or vine or ladder or barrier:
+			remove 2 from {_ProjectilePiercing}
+			set {_wallBangBullet} to true
+			if {_ProjectilePiercing} <= 0:
+				stop
+
+		if {_hitEntities::*} is set:
+			loop {_hitEntities::*}:
+				if {_hitEntities::%loop-index%} is {_shooter}:
+					set {_invalidEntity} to true
+				else if {_hitEntities::%loop-index%} is firework rocket:
+					set {_invalidEntity} to true
+				else if {_damagedEntities::%{_hitEntities::%loop-index%}%} is set:
+					set {_invalidEntity} to true
+				else if {-gameData::status} is not "STARTED":
+					if {_hitEntities::%loop-index%} is not a zombie:
+						set {_invalidEntity} to true
+				else if {_hitEntities::%loop-index%} is a player:
+					if {_hitEntities::%loop-index%} is not online:
+						set {_invalidEntity} to true
+				if {_invalidEntity} is not set:
+					if guns_confirmHeadshot({_shootLocation}, {_hitEntities::%loop-index%}) is true:
+						set {_finalDamage} to ({_rangeDamage} * {_headMultiplier})
+						set {_displaySuffix} to " &7&o[ʜᴇᴀᴅsʜᴏᴛ]"
+						set {_isHeadshot} to true
+					else:
+						set {_finalDamage} to ({_rangeDamage} * {_bodyMultiplier})
+						set {_displaySuffix} to ""
+						set {_isHeadshot} to false
+
+					entity_damage({_shooter}, {_hitEntities::%loop-index%}, {_finalDamage}, {_weapon}, {_isHeadshot}, false, {_wallBangBullet}, true, {_displaySuffix})
+					set {_damagedEntities::%{_hitEntities::%loop-index%}%} to now
+					remove 1 from {_ProjectilePiercing}
+					if {_ProjectilePiercing} <= 0:
+						stop
+				else:
+					delete {_invalidEntity}
+
+function guns_grenade(shooter: entity, item: item, damage: number, force: number = 2, radius: number = 3):
+	set {_spawnLocation} to location 0.7 meters above (location 0.35 meters left of {_shooter})
+	spawn armor stand at {_spawnLocation}
+	add "{Invisible:1b,Marker:1b,Invulnerable:1b,ShowArms:1b,CustomName:""&6%{_shooter}%&a's Grenade"",CustomNameVisible:1b,Pose:{RightArm:[350f,0f,360f]}}" to last spawned entity's nbt
+	set tool of last spawned entity to {_item}
+	set {_armorstand} to last spawned entity
+	push {_armorstand} upwards with force {_force} * 0.25
+	push {_armorstand} forwards with force {_force} * 0.75
+	loop 20 times:
+		drawDot particle "smokelarge", center {_armorstand}'s location, visibleRange 100
+		wait 5 ticks
+	drawDot particle "explosionhuge", center {_armorstand}'s location, visibleRange 100
+	set {_damageCenter} to {_armorstand}'s location
+	guns_playsound({_damageCenter}, "entity.generic.explode", 1)
+	kill {_armorstand}
+	loop all entities in radius {_radius} around {_damageCenter}:
+		if loop-entity is a player:
+		# ONLY WANT TO DMG PLAYERS
+			set {_distance} to (distance between {_damageCenter} and loop-entity)
+			set {_damagePercentage} to (({_radius} - {_distance}) / {_radius})
+			set {_finalDamage} to ceil({_damage} * {_damagePercentage})
+			set {_grenadeItem} to paper named "&aGrenade" with lore "&cIf you see this, something bad has happened... please report to an staff!"
+#			entity_damage({_shooter}, loop-entity, {_finalDamage}, {_grenadeItem}, false, false)
+
+function guns_updateStats(shooter: entity, item: item):
+
+	set {_attachmentStatsRaw} to item_getAttachmentStats({_shooter}, {_item})
+	set {_attachmentStats::*} to {_attachmentStatsRaw} split by ":"
+	loop {_attachmentStats::*}:
+		set {_attachmentStats::%loop-index%} to ({_attachmentStats::%loop-index%} parsed as number)
+
+	set {_damage} to item_getStat({_item}, "Damage")
+	if {_attachmentStats::1} is not 0:
+		set {_damage} to ({_damage} + ({_damage} * {_attachmentStats::1}))
+
+	set {_projectileRange} to item_getStat({_item}, "Projectile Range")
+	set {_projectileRadius} to item_getStat({_item}, "Projectile Radius")
+
+	set {_projectilePiercing} to item_getStat({_item}, "Projectile Piercing")
+	set {_projectilePiercing} to ({_projectilePiercing} + {_attachmentStats::4})
+
+	set {_projectileBurst} to item_getStat({_item}, "Projectile Burst")
+	if {_attachmentStats::3} is not 0:
+		set {_projectileBurst} to round({_projectileBurst} + ({_projectileBurst} * {_attachmentStats::3}))
+
+	set {_recoil} to item_getStat({_item}, "Recoil")
+
+	set {_accuracy} to item_getStat({_item}, "Accuracy")
+	if {_attachmentStats::2} is not 0:
+		set {_accuracy} to round({_accuracy} + ({_accuracy} * {_attachmentStats::2}))
+
+	set {_firerate} to item_getStat({_item}, "Firerate")
+	set {_ammoCapacity} to item_getStat({_item}, "Ammo Capacity")
+	set {_ammoCapacity} to ({_ammoCapacity} + {_attachmentStats::5})
+	set {_itemData} to "%{_item}'s name%:%{_damage}%:%{_projectileRange}%:%{_projectileRadius}%:%{_projectilePiercing}%:%{_projectileBurst}%:%{_recoil}%:%{_accuracy}%:%{_firerate}%:%{_ammoCapacity}%"
+	set {-selectedGunData::%{_shooter}%} to {_itemData}
+
+	operator_sendDebug("Weapon Select Update: %{_shooter}% -> %{-selectedGunData::%{_shooter}%}%")
+	guns_updateWalkSpeed({_shooter}, {_item})
+
+function guns_updateWalkSpeed(shooter: entity, item: item):
+	set {_weaponType} to guns_getGunType({_item})
+
+	if {_weaponType} is "SNIPER_RIFLE" or "LMG":
+		set {_shooter}'s walk speed to 0.14
+	else:
+		set {_shooter}'s walk speed to 0.2
+
+function guns_getStats(shooter: entity, item: item) :: numbers:
+	set {_damage} to item_getStat({_item}, "Damage")
+	set {_projectileRange} to item_getStat({_item}, "Projectile Range")
+	set {_projectileRadius} to item_getStat({_item}, "Projectile Radius")
+	set {_projectilePiercing} to item_getStat({_item}, "Projectile Piercing")
+	set {_projectileBurst} to item_getStat({_item}, "Projectile Burst")
+	set {_recoil} to item_getStat({_item}, "Recoil")
+	set {_accuracy} to item_getStat({_item}, "Accuracy")
+	set {_firerate} to item_getStat({_item}, "Firerate")
+	set {_ammoCapacity} to item_getStat({_item}, "Ammo Capacity")
+	add 0 to {_return::*} # NAME IGNORED (NAME = TEXT/ RETURN = NUMBER
+	add {_damage} to {_return::*}
+	add {_projectileRange} to {_return::*}
+	add {_projectileRadius} to {_return::*}
+	add {_projectilePiercing} to {_return::*}
+	add {_projectileBurst} to {_return::*}
+	add {_recoil} to {_return::*}
+	add {_accuracy} to {_return::*}
+	add {_firerate} to {_return::*}
+	add {_ammoCapacity} to {_return::*}
+	return {_return::*}
+
+function guns_shootWithStats(shooter: entity, weapon: item, accuracyMultiplier: number = 1, damageMultiplier: number = 1):
+	set {_datas::*} to {-selectedGunData::%{_shooter}%} split by ":"
+
+	if {_datas::2} is "0":
+		stop
+
+	loop {_datas::*}:
+		if "%loop-index%" is not "1":
+			set {_datas::%loop-index%} to ({_datas::%loop-index%} parsed as number)
+	guns_use({_shooter}, ({_shooter}'s head), {_weapon}, ({_datas::2} * {_damageMultiplier}),{_datas::3},{_datas::4},{_datas::5},{_datas::6},{_datas::7},({_datas::8} * {_accuracyMultiplier}),{_datas::9},{_datas::10})
+
+#function guns_runShoot(shooter: entity, weapon: item, accuracyMultiplier: number = 1, damageMultiplier: number = 1):
+#	set {_datas::*} to {-selectedGunData::%{_shooter}%} split by ":"
+#	if {_datas::2} is "0":
+#		stop
+#	loop {_datas::*}:
+#		if "%loop-index%" is not "1":
+#			set {_datas::%loop-index%} to ({_datas::%loop-index%} parsed as number)
+#	while (true):
+#		if 1 of {_shooter}'s tool is not 1 of {_weapon}:
+#			exit 1 loop
+#		if {-playerRightMouseAction::%{_shooter}%} is not "SHOOT":
+#			exit 1 loop
+#		guns_use({_shooter}, ({_shooter}'s head), {_weapon}, ({_datas::2} * {_damageMultiplier}),{_datas::3},{_datas::4},{_datas::5},{_datas::6},{_datas::7},({_datas::8} * {_accuracyMultiplier}),{_datas::9},{_datas::10})
+#		wait 8 ticks
+
+function guns_checkHitContact(bulletLocation: location, bulletRadius: number) :: entities:
+	loop all entities in world of {_bulletLocation}:
+		if {_loopEntity} != {_attackerFactors::1}:
+			if entity_isLivingEntity(loop-entity):
+				if guns_confirmHit({_bulletLocation}, loop-entity, {_bulletRadius}):
+					add loop-entity to {_hitEntities::*}
+	return {_hitEntities::*}
+
+function guns_confirmHit(bulletCenter: location, entity: entity, bulletRadius: number = 0.5) :: boolean:
+	if {_bulletCenter}'s world != {_entity}'s world:
+		return false
+	if abs({_bulletCenter}'s x coordinate - {_entity}'s x coordinate) > {_bulletRadius}:
+		if abs({_bulletCenter}'s x coordinate - {_entity}'s head's x coordinate) > {_bulletRadius}:
+			return false
+	if abs({_bulletCenter}'s z coordinate - {_entity}'s z coordinate) > {_bulletRadius}:
+		if abs({_bulletCenter}'s z coordinate - {_entity}'s head's z coordinate) > {_bulletRadius}:
+			return false
+	if {_bulletCenter}'s y coordinate > ({_entity}'s head's y coordinate + 0.25):
+		if abs({_bulletCenter}'s y coordinate - {_entity}'s y coordinate) > {_bulletRadius}:
+			if abs({_bulletCenter}'s y coordinate - {_entity}'s head's y coordinate) > {_bulletRadius}:
+				return false
+	if {_bulletCenter}'s y coordinate < {_entity}'s y coordinate:
+		if abs({_bulletCenter}'s y coordinate - {_entity}'s y coordinate) > {_bulletRadius}:
+			if abs({_bulletCenter}'s y coordinate - {_entity}'s head's y coordinate) > {_bulletRadius}:
+				return false
+	return true
+
+function guns_confirmHeadshot(bulletCenter: location, entity: entity, bulletRadius: number = 0.5) :: boolean:
+	if {_bulletCenter}'s world != {_entity}'s world:
+		return false
+	if abs({_bulletCenter}'s x coordinate - {_entity}'s head's x coordinate) > {_bulletRadius}:
+		return false
+	if abs({_bulletCenter}'s z coordinate - {_entity}'s head's z coordinate) > {_bulletRadius}:
+		return false
+	if abs({_bulletCenter}'s y coordinate - {_entity}'s head's y coordinate) > 0.5:
+		return false
+	return true
+
+function entity_isLivingEntity(entity: entity) :: boolean:
+	if type of {_entity} = armor stand or painting or dropped item or area effect cloud or xp orb or boat or item frame or fireball:
+		return false
+	if "%type of {_entity}%" = "dropped item" or "<none>":
+		return false
+	return true
+
+function guns_recoil(shooter: entity, recoilPower: number, horizontalOnly: boolean = true):
+	set {_recoil} to ({_recoilPower} / 15)
+	if (block at location 0.01 meters below {_shooter}) is air:
+		stop
+	if {_shooter} is sneaking:
+		set {_recoil} to {_recoil} * 0.5
+	if {_horizontalOnly}:
+#		push {_shooter} horizontally backwards with force {_recoil}
+	else:
+#		push {_shooter} backwards with force {_recoil}
+
+function guns_applyAccuracy(bulletLocation: location, accuracy: number) :: location:
+	set {_accuracy} to ((45 - {_accuracy}) / 45)
+
+	set {_random} to random integer between -4 and 4
+	set {_bulletLocation}'s yaw to ({_bulletLocation}'s yaw + ({_random} * {_accuracy}))
+
+	set {_random} to random integer between -4 and 4
+	set {_bulletLocation}'s pitch to ({_bulletLocation}'s pitch + ({_random} * {_accuracy}))
+
+	return {_bulletLocation}
+
+function entity_heal(entity: entity):
+	set {-entityHealth::%{_entity}%} to 100
+	entity_updateHealth({_entity})
+
+function entity_damage(attacker: entity, victim: entity, damage: number, weapon: item, isHeadshot: boolean, isBackstab: boolean, isWallBang: boolean, testDummyBypass: boolean = false, displaySuffix: string = "", attackerNotExist: boolean = false):
+
+	operator_sendDebug("Damage: (ATTACKER=%{_attacker}%, VICTIM=%{_victim}%) %{_damage}%")
+
+	if {_victim}'s gamemode is creative:
+		stop
+
+	if {_attackerNotExist} is false:
+		if {-gameData::gamemode} is not "FFA":
+			if {-playerTeam::%{_attacker}%} is {-playerTeam::%{_victim}%}:
+				stop
+
+	if {-invincibleCountdown::%{_victim}%} is set:
+		if {-invincibleCountdown::%{_victim}%} is not 3:
+			send "&cPlayer has been protected by spawn protection! (Expire in %{-invincibleCountdown::%{_victim}%}% seconds)" to {_attacker}
+		stop
+
+	if {_attackerNotExist} is false:
+		send title "&7" with subtitle "&c-%{_damage}% ❤%{_displaySuffix}%" to {_attacker} for 0.4 seconds with 0 tick fadein and 0 tick fadeout
+
+	if {-entityHealth::%{_victim}%} is not set:
+		set {-entityHealth::%{_victim}%} to ({_victim}'s max health * 10)
+		operator_sendDebug("Health data not found for %{_victim}%: Set to %{-entityHealth::%{_victim}%}%.")
+
+	entity_blood({_victim})
+	if {_attackerNotExist} is false:
+		guns_playsound(({_attacker}'s location), "entity.arrow.hit_player", 1)
+
+	if {_testDummyBypass} is true:
+		if {_victim}'s name is "&f":
+			set {_fakeDamage} to true
+
+	if {_fakeDamage} is not set:
+		if {-entityHealth::%{_victim}%} > {_damage}:
+			set {_finalDamage} to {_damage}
+		else:
+			set {_finalDamage} to {-entityHealth::%{_victim}%}
+
+		set {-entityHealth::%{_victim}%} to ({-entityHealth::%{_victim}%} - {_finalDamage})
+
+		if {-entityHealth::%{_victim}%} <= 0:
+			entity_death({_attacker}, {_victim}, {_weapon}, {_isHeadshot}, {_isBackstab}, {_isWallBang}, 	{_attackerNotExist})
+			stop
+	entity_updateHealth({_victim})
+
+function entity_death(attacker: entity, victim: entity, weapon: item, isHeadshot: boolean, isBackstab: boolean, isWallBang: boolean, attackerNotExist: boolean = false):
+	delete {-entityHealth::%{_victim}%}
+	entity_heal({_victim})
+	delete {-showOnRadar::%{_victim}%}
+	set {_displaySuffix} to ""
+	if {_isHeadshot} is true:
+		set {_displaySuffix} to "%{_displaySuffix}%&c[ʜᴇᴀᴅsʜᴏᴛ] "
+	if {_isBackstab} is true:
+		set {_displaySuffix} to "%{_displaySuffix}%&c[ʙᴀᴄᴋsᴛᴀʙ] "
+	set {_victimDisplay} to "&f%entity_getTeamColor({_victim})%%{_victim}%"
+	if {_attackerNotExist} is false:
+		set {_attackerDisplay} to "&f%entity_getTeamColor({_attacker})%%{_attacker}%"
+	else:
+		set {_attackerDisplay} to "&6Unknown"
+	set {_attachmentFullID} to "%{_attacker}'s UUID%.%{_weapon}'s name%"
+	if {-selectedAttachment::%{_attachmentFullID}%::1} is set:
+		set {_optic} to "&a%uncolored {-selectedAttachment::%{_attachmentFullID}%::1}'s name%"
+	else:
+		set {_optic} to "&aDefault"
+	if {-selectedAttachment::%{_attachmentFullID}%::2} is set:
+		set {_barrel} to "&a%uncolored {-selectedAttachment::%{_attachmentFullID}%::2}'s name%"
+	else:
+		set {_barrel} to "&aDefault"
+	if {-selectedAttachment::%{_attachmentFullID}%::3} is set:
+		set {_underbarrel} to "&a%uncolored {-selectedAttachment::%{_attachmentFullID}%::3}'s name%"
+	else:
+		set {_underbarrel} to "&aDefault"
+	if {-selectedAttachment::%{_attachmentFullID}%::4} is set:
+		set {_other} to "&a%uncolored {-selectedAttachment::%{_attachmentFullID}%::4}'s name%"
+	else:
+		set {_other} to "&aDefault"
+	set {_attachmentReport} to "&f<tooltip:%{_weapon}'s name%%nl%%nl%&a%{_optic}%%nl%&a%{_barrel}%%nl%&a%{_underbarrel}%%nl%&a%{_other}%>&7&o[Hover to view Attachments]<reset>"
+	if {_attackerNotExist} is false:
+		set {_distance} to distance between {_attacker} and {_victim}
+	else:
+		set {_distance} to 0
+	send "%{_attackerDisplay}% &e%api_toSmallCap((uncolored {_weapon}'s name))% %{_victimDisplay}%&e! (%{_distance}%m) %{_displaySuffix}%%{_attachmentReport}%" to all players
+	if {_attackerNotExist} is false:
+		guns_addExp({_attacker}, 100, "Kill")
+		if {_isHeadshot}:
+			guns_addExp({_attacker}, 25, "Headshot")
+		if {_isBackstab}:
+			guns_addExp({_attacker}, 25, "Backstab")
+		if {_isWallBang}:
+			guns_addExp({_attacker}, 25, "Wall Bang")
+	if {_attacker} and {_victim} is a player:
+		if {_attackerNotExist} is false:
+			add 1 to {-playerKills::%{_attacker}%}
+		add 1 to {-playerDeaths::%{_victim}%}
+		if {_attackerNotExist} is false:
+			if {-playerTeam::%{_attacker}%} is "RED":
+				add 1 to {-gameData::redKills}
+			else if {-playerTeam::%{_attacker}%} is "BLUE":
+				add 1 to {-gameData::blueKills}
+			if {-playerRoundKills::%{_attacker}%} is not set:
+				set {-playerRoundKills::%{_attacker}%} to 0
+			add 1 to {-playerRoundKills::%{_attacker}%}
+			entity_updateTab(("%{_attacker}%" parsed as player))
+		entity_updateTab(("%{_victim}%" parsed as player))
+		set {-invincibleCountdown::%{_victim}%} to 3
+		if {-lastTeleport::%{_victim}%} is not set:
+			set {-lastTeleport::%{_victim}%} to random integer between 1 and 20
+		else:
+			while (true):
+				set {_random} to random integer between 1 and 20
+				if {-lastTeleport::%{_victim}%} is not {_random}:
+					set {-lastTeleport::%{_victim}%} to {_random}
+					exit 1 loop
+		entity_deathEffect({_victim})
+		guns_summonDeadbody({_victim}, ({_victim}'s location))
+		guns_toSpawnpoint({_victim}, {-lastTeleport::%{_victim}%})
+		wait 7 ticks
+		entity_heal({_victim})
+		guns_getInventory({_victim})
+	else if {_attacker} is a player:
+		kill {_victim}
+	if {_attackerNotExist} is false:
+		set {_attackerSubtitle} to "Killed %{_victim}%"
+		send title "&f" with subtitle "&c%api_toSmallCap({_attackerSubtitle})%" to {_attacker} for 2 second with 0 tick fadein and 0 tick fadeout
+	set {_victimTitle} to "Killed by %{_attacker}%"
+	set {_victimSubtitle} to "with %{_weapon}'s name%"
+	send title "&c%api_toSmallCap({_victimTitle})%" with subtitle "&e%api_toSmallCap({_victimSubtitle})%" to {_victim} for 2 second with 0 tick fadein and 0 tick fadeout
+		
+function entity_deathEffect(entity: entity):
+	if {-gameData::gamemode} is "TDM":
+		if {-playerTeam::%{_entity}%} is "RED":
+			launch ball large coloured dark red, red and white fading to white at {_entity}'s location with duration 0
+		else:
+			launch ball large coloured dark blue, blue and white fading to white at {_entity}'s location with duration 0
+	else:
+		launch ball large coloured dark red, red and white fading to white at {_entity}'s location with duration 0
+
+function entity_updateHealth(entity: entity):
+	if {-entityHealth::%{_entity}%} is set:
+		set {_percentage} to ({-entityHealth::%{_entity}%} / 100)
+		set {_halfHearts} to (ceil(20 * {_percentage}) / 2)
+		set {_entity}'s health to {_halfHearts}
+		hpBar_update({_entity})
+
+function entity_updateTab(player: player):
+	if {-playerKills::%{_player}%} is not set:
+		set {-playerKills::%{_player}%} to 0
+	if {-playerDeaths::%{_player}%} is not set:
+		set {-playerDeaths::%{_player}%} to 0
+	set ("%{_player}%" parsed as player)'s tablist name to "&e&l%{-playerStatLevel::%{_player}%}% %entity_getTeamColor({_player})%%{_player}% &6[%{-playerKills::%{_player}%}% - %{-playerDeaths::%{_player}%}%]"
+
+function entity_getTeamColor(entity: entity) :: text:
+	if {-gameData::gamemode} is "FFA":
+		set {_nameColor} to "&a"
+	else if {-playerTeam::%{_entity}%} is "RED":
+		set {_nameColor} to "&c"
+	else if {-playerTeam::%{_entity}%} is "BLUE":
+		set {_nameColor} to "&9"
+	else:
+		set {_nameColor} to "&7"
+	return {_nameColor}
+
+function entity_getTeamArmor(entity: entity):
+	set {_entity}'s helmet to leather helmet
+	set {_entity}'s chestplate to leather chestplate
+	set {_entity}'s leggings to leather leggings
+	set {_entity}'s boots to leather boots
+	if {-gameData::gamemode} is "FFA":
+		set {_armorColor} to WHITE
+	else if {-playerTeam::%{_entity}%} is "RED":
+		set {_armorColor} to RED
+	else if {-playerTeam::%{_entity}%} is "BLUE":
+		set {_armorColor} to BLUE
+	else:
+		set {_armorColor} to WHITE
+	dye {_entity}'s helmet {_armorColor}
+	dye {_entity}'s chestplate {_armorColor}
+	dye {_entity}'s leggings {_armorColor}
+	dye {_entity}'s boots {_armorColor}
+
+function entity_blood(entity: entity):
+	loop 10 times:
+		set {_location} to {_entity}'s location
+		set {_randomX} to ((random integer between -5 and 5) / 10)
+		set {_randomY} to ((random integer between 1 and 20) / 10)
+		set {_randomZ} to ((random integer between -5 and 5) / 10)
+		set {_location}'s x coords to ({_location}'s x coords + {_randomX})
+		set {_location}'s y coords to ({_location}'s y coords + {_randomY})
+		set {_location}'s z coords to ({_location}'s z coords + {_randomZ})
+		drawDot count 10, particle blockdust, material redstone block, center {_location}, visibleRange 100
+
+function guns_playsound(location: location, sound: text, pitch: number):
+	play sound "%{_sound}%" with volume 4 and pitch {_pitch} at {_location} for all players
+
+function guns_toLobby(entity: entity):
+	set {_lobbyLocaation} to location at (25.5, 32, 213.5) in world ("game")
+	set {_lobbyLocaation}'s yaw to -60
+	set {_lobbyLocaation}'s pitch to 0
+	hpBar_safeTeleport({_entity}, {_lobbyLocaation})
+
+function guns_toSpawnpoint(entity: entity, spawnpointID: number):
+	if {_spawnpointID} is 1:
+		hpBar_safeTeleport({_entity}, (location at (-77.5, 49, 187.5) in world("game")))
+	else if {_spawnpointID} is 2:
+		hpBar_safeTeleport({_entity}, (location at (-95.5, 47, 181.5) in world("game")))
+	else if {_spawnpointID} is 3:
+		hpBar_safeTeleport({_entity}, (location at (-105.5, 49, 193.5) in world("game")))
+	else if {_spawnpointID} is 4:
+		hpBar_safeTeleport({_entity}, (location at (-144.5, 49, 177.5) in world("game")))
+	else if {_spawnpointID} is 5:
+		hpBar_safeTeleport({_entity}, (location at (-164.5, 49, 159.5) in world("game")))
+	else if {_spawnpointID} is 6:
+		hpBar_safeTeleport({_entity}, (location at (-175.5, 49, 126.5) in world("game")))
+	else if {_spawnpointID} is 7:
+		hpBar_safeTeleport({_entity}, (location at (-150.5, 49, 127.5) in world("game")))
+	else if {_spawnpointID} is 8:
+		hpBar_safeTeleport({_entity}, (location at (-153.5, 51, 105.5) in world("game")))
+	else if {_spawnpointID} is 9:
+		hpBar_safeTeleport({_entity}, (location at (-125.5, 51, 48.5) in world("game")))
+	else if {_spawnpointID} is 10:
+		hpBar_safeTeleport({_entity}, (location at (-93.5, 43, 74.5) in world("game")))
+	else if {_spawnpointID} is 11:
+		hpBar_safeTeleport({_entity}, (location at (-28.5, 45, 62.5) in world("game")))
+	else if {_spawnpointID} is 12:
+		hpBar_safeTeleport({_entity}, (location at (-59.5, 49, 74.5) in world("game")))
+	else if {_spawnpointID} is 13:
+		hpBar_safeTeleport({_entity}, (location at (-40.5, 43, 93.5) in world("game")))
+	else if {_spawnpointID} is 14:
+		hpBar_safeTeleport({_entity}, (location at (-45.5, 49, 116.5) in world("game")))
+	else if {_spawnpointID} is 15:
+		hpBar_safeTeleport({_entity}, (location at (-56.5, 46, 147.5) in world("game")))
+	else if {_spawnpointID} is 16:
+		hpBar_safeTeleport({_entity}, (location at (-78.5, 43, 123.5) in world("game")))
+	else if {_spawnpointID} is 17:
+		hpBar_safeTeleport({_entity}, (location at (-88.5, 43, 93.5) in world("game")))
+	else if {_spawnpointID} is 18:
+		hpBar_safeTeleport({_entity}, (location at (-115.5, 43, 163.5) in world("game")))
+	else if {_spawnpointID} is 19:
+		hpBar_safeTeleport({_entity}, (location at (-31.5, 43, 85.5) in world("game")))
+	else if {_spawnpointID} is 20:
+		hpBar_safeTeleport({_entity}, (location at (-45.5, 49, 131.5) in world("game")))
+
+function guns_getInventory(player: player):
+	clear {_player}'s inventory
+	if {-gameData::status} is "WAITING" or "STARTING":
+		set slot 0 of {_player}'s inventory to clock named "&6Gun Selector"
+		set slot 1 of {_player}'s inventory to book named "&6Game Introduction"
+	else if {-gameData::status} is "STARTED":
+		gunSelect_getSelectedGuns({_player}, 0, "PRIMARY")
+		gunSelect_getSelectedGuns({_player}, 1, "SECONDARY")
+		set slot 2 of {_player}'s inventory to iron sword named "&aKnife" with lore "&e60 Damage"
+		set slot 7 of {_player}'s inventory to book named "&6Game Introduction"
+		set slot 8 of {_player}'s inventory to clock named "&6Gun Selector"
+		entity_getTeamArmor({_player})
+	set {_tool} to {_player}'s tool
+	guns_updateStats({_player}, {_tool})
+	if {_tool} is diamond hoe or iron hoe:
+		send "&f&m------------------------------%nl%&e&eHold &aRight-Click &eto Aim,%nl%&aLeft-Click &ewhile aiming to fire.%nl%%nl%&e&lNOTE: &eYou can still fire without aiming%nl%but will decrease &aaccuracy &eand &adamage&e.%nl%&f&m------------------------------" to {_player}
+
+function guns_reloadGun(shooter: player, weapon: item):
+	set {_playerSelectedSlot} to current hotbar slot of {_shooter}
+	if {-isReloading::%{_shooter}%} is set:
+		stop
+	set {-isReloading::%{_shooter}%} to true
+	set {_datas::*} to {-selectedGunData::%{_shooter}%} split by ":"
+	if {_datas::2} is "0":
+		stop
+	set {_ammoCapacity} to ("%{_datas::10}%" parsed as number)
+	send "&eReloading..." to {_shooter}
+	guns_playsound({_shooter}, "minecraft:block.iron_door.open", 2)
+
+	set {_weaponType} to guns_getGunType({_weapon})
+
+	if {_weaponType} is "SNIPER_RIFLE" or "LMG":
+		set {_waitTimes} to 40
+	else if {_weaponType} is "SHOTGUN":
+		set {_waitTimes} to 60
+	else:
+		set {_waitTimes} to 20
+	set {_loopTimes} to round({_waitTimes} / 4)
+	set {_soundTimes} to floor(({_loopTimes} - 2) / {_ammoCapacity})
+
+	set {_soundCountdown} to 0
+	set {_increasement} to (max durability of {_weapon} / {_loopTimes})
+	set {_reloadDurability} to max durability of {_weapon}
+	loop {_loopTimes} times:
+		remove {_increasement} from {_reloadDurability}
+		if round({_reloadDurability}) <= 0:
+			set durability of {_weapon} to 1
+		else:
+			set durability of {_weapon} to round({_reloadDurability})
+		if (slot {_playerSelectedSlot} of {_shooter}'s inventory's name) is {_weapon}'s name:
+			set slot {_playerSelectedSlot} of {_shooter}'s inventory to {_weapon}
+		else:
+			exit 1 loop
+		wait 5 ticks
+		set {_percentage} to (100 * (loop-number / {_loopTimes}))
+		set {_displayTimes} to ceil({_percentage})
+		set {_displayBar} to ""
+		loop 10 times:
+			if {_displayTimes} >= 10:
+				set {_displayBar} to "%{_displayBar}%&a▖"
+			else:
+				set {_displayBar} to "%{_displayBar}%&c▖"
+			remove 10 from {_displayTimes}
+		if {_weaponType} is "SHOTGUN":
+			if {_soundCountdown} >= {_soundTimes}:
+				guns_playsound({_shooter}, "minecraft:entity.irongolem.attack", 1)
+				set {_soundCountdown} to 0
+			else:
+				add 1 to {_soundCountdown}
+		send action bar "&f[%{_displayBar}%&f]" to {_shooter}
+		if {_playerSelectedSlot} is not (current hotbar slot of {_shooter}):
+			exit 1 loop
+		if {-gameData::status} is not "STARTED":
+			if {_playerSelectedSlot} is not 2:
+				exit 1 loop
+		if loop-number >= {_loopTimes}:
+			set durability of {_weapon} to 0
+			set slot {_playerSelectedSlot} of {_shooter}'s inventory to {_ammoCapacity} of {_weapon}
+			guns_playsound({_shooter}, "minecraft:block.piston.contract", 2)
+			set {_ID} to "%{_shooter}%.%{_weapon}'s name%"
+			set {-gunAmmo::%{_ID}%} to {_ammoCapacity}
+			send "&aSuccessfully reloaded your gun! [%{_ammoCapacity}% / %{_ammoCapacity}%]" to {_shooter}
+			delete {-isReloading::%{_shooter}%}
+			stop
+	delete {-isReloading::%{_shooter}%}
+	set durability of {_weapon} to 0
+	if (slot {_playerSelectedSlot} of {_shooter}'s inventory's name) is {_weapon}'s name:
+		set slot {_playerSelectedSlot} of {_shooter}'s inventory to {_weapon}
+	send "&cReload Cancelled!" to {_shooter}
+
+
+function guns_setFullAmmo(shooter: entity, gun: item):
+	set {_datas::*} to guns_getStats({_shooter}, {_gun})
+	set {_ID} to "%{_shooter}%.%{_gun}'s name%"
+	set {-gunAmmo::%{_ID}%} to {_datas::10}
+
+function guns_getGunType(weapon: item) :: text:
+	if {_weapon} is stone hoe:
+		return "ASSAULT_RIFLE"
+	else if {_weapon} is iron axe:
+		return "PDW"
+	else if {_weapon} is golden pickaxe:
+		return "LMG"
+	else if {_weapon} is stone axe:
+		return "CARBINE"
+	else if {_weapon} is iron hoe:
+		return "DMR"
+	else if {_weapon} is golden shovel:
+		return "SHOTGUN"
+	else if {_weapon} is diamond hoe:
+		return "SNIPER_RIFLE"
+	else if {_weapon} is wooden hoe:
+		return "PISTOL"
+	else if {_weapon} is wooden axe:
+		return "MACHINE_PISTOL"
+
+function guns_addExp(player: player, amount: number, reason: text = ""):
+	if {-playerStatExp::%{_player}%} is not set:
+		set {-playerStatExp::%{_player}%} to 0
+		set {-playerStatExpTotal::%{_player}%} to 0
+	add {_amount} to {-playerStatExp::%{_player}%}
+	add {_amount} to {-playerStatExpTotal::%{_player}%}
+	if {_reason} is "":
+		set {_suffix} to ""
+	else:
+		set {_suffix} to " (%{_reason}%)"
+	send "&6+%{_amount}% Exp%{_suffix}%" to {_player}
+	while (true):
+		set {_requireExp} to (({-playerStatLevel::%{_player}%} * 150) + 200)
+		if {-playerStatExp::%{_player}%} >= {_requireExp}:
+			remove {_requireExp} from {-playerStatExp::%{_player}%}
+			if {-playerStatLevel::%{_player}%} is not set:
+				set {-playerStatLevel::%{_player}%} to 0
+			add 1 to {-playerStatLevel::%{_player}%}
+			send "&a&lLEVEL UP! &aYou are now level %{-playerStatLevel::%{_player}%}%!" to {_player}
+			set {_creditRewardAmount} to (({-playerStatLevel::%{_player}%} * 5) + 200)
+			add {_creditRewardAmount} to {-playerStatCredit::%{_player}%}
+			send "&b+%{_creditRewardAmount}% Credits (Level Up)" to {_player}
+		else:
+			exit 1 loop
+	game_updateDisplay({_player})
+	entity_updateTab({_player})
+
+function guns_summonDeadbody(player: player, location: location):
+	spawn 1 armor stand at {_location}
+	set {_locationDetector} to last spawned entity
+	add "{Invisible:1b,Invulnerable:1b}" to last spawned entity's nbt
+	loop 30 times:
+		if {_locationDetector} is on ground:
+			set {_location} to {_locationDetector}'s location
+			kill {_locationDetector}
+		else:
+			wait 4 ticks
+	set {_location}'s pitch to 0
+	spawn 1 armor stand at location 1.3 meters below {_location}
+	set {_deadbodyUp} to last spawned entity
+	add "{Invulnerable:1b,NoBasePlate:1b,NoGravity:1b,ShowArms:1b,DisabledSlots:2039583,Pose:{Body:[273f,0f,0f],Head:[288f,341f,0f],LeftLeg:[194f,0f,0f],RightLeg:[194f,0f,0f],LeftArm:[262f,354f,36f],RightArm:[273f,19f,0f]}}" to last spawned entity's nbt
+	set armor stand helmet of {_deadbodyUp} to {_player}'s skull
+	set armor stand chestplate of {_deadbodyUp} to leather chestplate
+	dye {_deadbodyUp}'s chestplate WHITE
+	spawn 1 armor stand at location 0.7 meters below and 0.5 meters infront of {_location}
+	add "{Invisible:1b,Invulnerable:1b,NoBasePlate:1b,NoGravity:1b,DisabledSlots:2039583,Pose:{LeftLeg:[271f,320f,0f],RightLeg:[273f,6f,0f]}}" to last spawned entity's nbt
+	set {_deadbodyDown} to last spawned entity
+	set armor stand leggings of {_deadbodyDown} to leather leggings
+	dye {_deadbodyDown}'s leggings WHITE
+	set armor stand boots of {_deadbodyDown} to leather boots
+	dye {_deadbodyDown}'s boots WHITE
+	wait 10 seconds
+	kill {_deadbodyUp}
+	kill {_deadbodyDown}
