@@ -4,13 +4,9 @@ options:
 	noPermissionMessage: &cYou are not allowed to use this command!
 	defaultReason: The Ban Hammer has spoken!
 
-# NOTE: REQUIRE API
-# NOTE: REQUIRE API
-# NOTE: REQUIRE API
-
 command /tempban [<offline player>] [<time span> @] [<text>]:
 	trigger:
-		if executor is not a op:
+		if executor doesn't have permission "server.administrator":
 			send "{@noPermissionMessage}" to executor
 			stop
 		if arg 1 or arg 2 is not set:
@@ -41,7 +37,7 @@ command /tempban [<offline player>] [<time span> @] [<text>]:
 
 command /ban [<offline player>] [<text>]:
 	trigger:
-		if executor is not a op:
+		if executor doesn't have permission "server.administrator":
 			send "{@noPermissionMessage}" to executor
 			stop
 		if arg 1 is not set:
@@ -75,7 +71,7 @@ command /ban [<offline player>] [<text>]:
 
 command /mute [<offline player>] [<time span> @] [<text>]:
 	trigger:
-		if executor is not a op:
+		if executor doesn't have permission "server.administrator":
 			send "{@noPermissionMessage}" to executor
 			stop
 		if arg 1 or arg 2 is not set:
@@ -109,7 +105,7 @@ command /mute [<offline player>] [<time span> @] [<text>]:
 
 command /kick [<offline player>] [<text>]:
 	trigger:
-		if executor is not a op:
+		if executor doesn't have permission "server.administrator":
 			send "{@noPermissionMessage}" to executor
 			stop
 		if arg 1 is not set:
@@ -137,7 +133,7 @@ command /kick [<offline player>] [<text>]:
 
 command /warn [<offline player>] [<text>]:
 	trigger:
-		if executor is not a op:
+		if executor doesn't have permission "server.administrator":
 			send "{@noPermissionMessage}" to executor
 			stop
 		if arg 1 is not set:
@@ -162,7 +158,7 @@ command /warn [<offline player>] [<text>]:
 
 command /unban [<offline player>]:
 	trigger:
-		if executor is not a op:
+		if executor doesn't have permission "server.administrator":
 			send "{@noPermissionMessage}" to executor
 			stop
 		if arg 1 is not set:
@@ -182,7 +178,7 @@ command /unban [<offline player>]:
 
 command /unmute [<offline player>]:
 	trigger:
-		if executor is not a op:
+		if executor doesn't have permission "server.administrator":
 			send "{@noPermissionMessage}" to executor
 			stop
 		if arg 1 is not set:
@@ -202,7 +198,7 @@ command /unmute [<offline player>]:
 
 command /history [<offline player>]:
 	trigger:
-		if executor is not a op:
+		if executor doesn't have permission "server.administrator":
 			send "{@noPermissionMessage}" to executor
 			stop
 		if arg 1 is not set:
@@ -227,7 +223,7 @@ command /history [<offline player>]:
 
 command /name-history [<offline player>]:
 	trigger:
-		if executor is not a op:
+		if executor doesn't have permission "server.administrator":
 			send "{@noPermissionMessage}" to executor
 			stop
 		if arg 1 is not set:
@@ -241,15 +237,15 @@ command /name-history [<offline player>]:
 		loop {_nameDatas::*}:
 			if {_nameDatas::%loop-index%} contains ":":
 				set {_data::*} to {_nameDatas::%loop-index%} split by ":"
-				set {_date} to api_UnixToDate({_data::2})
-				set {_namesDisplay} to "%{_namesDisplay}%%nl%&a- &e%{_data::1}% &a(Changed to on &e%api_UnixToDate({_data::2} parsed as number / 1000)%&a)"
+				set {_date} to api_unixToDate({_data::2})
+				set {_namesDisplay} to "%{_namesDisplay}%%nl%&a- &e%{_data::1}% &a(Changed to on &e%api_unixToDate({_data::2} parsed as number / 1000)%&a)"
 			else:
 				set {_namesDisplay} to "%{_namesDisplay}%%nl%&a- &e%{_nameDatas::%loop-index%}%"
 		send "&aName history for player &e%arg 1% &a(&e%amount of {_nameDatas::*}%&a):%{_namesDisplay}%" to executor
 
 command /ip-history [<offline player>]:
 	trigger:
-		if executor is not a op:
+		if executor doesn't have permission "server.administrator":
 			send "{@noPermissionMessage}" to executor
 			stop
 		if arg 1 is not set:
@@ -264,7 +260,7 @@ command /ip-history [<offline player>]:
 
 command /check [<offline player>]:
 	trigger:
-		if executor is not a op:
+		if executor doesn't have permission "server.administrator":
 			send "{@noPermissionMessage}" to executor
 			stop
 		if arg 1 is not set:
