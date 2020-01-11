@@ -20,6 +20,18 @@ function item_getStat(item: item, statName: string) :: number:
 	else:
 		return ({_finalData} parsed as number)
 
+function item_getAllStats(item: item) :: numbers:
+	
+	loop string_split({_item}'s lore, "||"):
+
+		if loop-value contains "&e":
+			set {_dataRaw::*} to uncolored loop-value split by " "
+			set {_returnValue} to ({_dataRaw::1} parsed as number)
+			add {_returnValue} to {_return::*}
+
+	return {_return::*}
+
+
 function item_getAttachmentStats(player: player, weapon: item) :: text:
 
 	set {_damageBonus} to 0
