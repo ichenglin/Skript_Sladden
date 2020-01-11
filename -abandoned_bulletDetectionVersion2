@@ -1,10 +1,30 @@
 # +-----------------------------------------+
-# +-----------------------------------------+
+# +------------ ABANDON REASON -------------+
 # +-----------------------------------------+
 # The new bullet detection system is made
 # for improve performace purpose. But then
 # abandoned due to bullet piercing detection
 # make performce worse than before.
+# +-----------------------------------------+
+# +-----------------------------------------+
+# +-----------------------------------------+
+
+
+
+# +-----------------------------------------+
+# +------------ DETEECT METHOD -------------+
+# +-----------------------------------------+
+# 1. Get the distance between shooter and all
+#    entities.
+# 2. Predict bullet's location using distance
+#    to entities(Step 1).
+# 3. Detect if the predict location is in
+#    the entity's custom hitbox. If the
+#    predict location is inside the hitbox,
+#    that means the entity get hit.
+# 4. Caculate bullet final damage with
+#    factors such as bullet fly distance and
+#    headshot.
 # +-----------------------------------------+
 # +-----------------------------------------+
 # +-----------------------------------------+
