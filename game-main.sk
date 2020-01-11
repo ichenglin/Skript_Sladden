@@ -1,4 +1,8 @@
+on load:
+	game_cleanEntities()
+
 every 1 minute:
+	game_cleanEntities()
 	set {_randomNumber} to random integer between 1 and 5
 	if {_randomNumber} is 1:
 		set {_broadcastMessage} to "&eThere are a lot types of guns such as &6Assault Rifle&e, &6PDW&e, &6LMG&e, &6DMR&e, &6Shotgun &eand &6Sniper Rifle&e. Select your guns with the &6Gun Selector&e!"
@@ -111,10 +115,30 @@ command /cleanSomething:
 		if executor doesn't have permission "server.developer":
 			send "&cYou are not allowed to use this command!" to executor
 			stop
-		kill all armor stands
-		kill all area effect clouds
-		hpBar_reload()
+		game_cleanEntities()
 		send "&aCleaned things for the server!" to executor
+
+command /forceDamage [<offline player>] [<offline player>] [<number>]:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		set {_attackerNotExist} to false
+		if arg 1 and arg 2 and arg 3 is not set:
+			send "&cUsage: /forceDamage <attacker|CONSOLE> <victim> <damage>" to executor
+			stop
+		if arg 1 is not online:
+			if arg 1 is not "Console":
+				send "&cThe attacker is not online!" to executor
+				stop
+			set {_attackerNotExist} to true
+		if arg 2 is not online:
+			send "&cThe victim is not online!" to executor
+			stop
+		if arg 3 <= 0:
+			send "&cInvalid damage input!" to executor
+			stop
+		entity_damage(arg 1, arg 2, arg 3, (stone named "&aForce Kill"), false, false, false, false, "", {_attackerNotExist})
 
 command /heal [<offline player>]:
 	trigger:
@@ -144,10 +168,10 @@ command /setGamemode [<text>]:
 			send "&cYou are not allowed to use this command!" to executor
 			stop
 		if arg 1 is not set:
-			send "&cUsage: /setGamemode <FFA/TDM/RANDOM>" to executor
+			send "&cUsage: /setGamemode <FFA/TDM/GUNGAME/RANDOM>" to executor
 			stop
-		if arg 1 is not "FFA" or "TDM" or "RANDOM":
-			send "&cUsage: /setGamemode <FFA/TDM/RANDOM>" to executor
+		if arg 1 is not "FFA" or "TDM" or "GUNGAME" or "RANDOM":
+			send "&cUsage: /setGamemode <FFA/TDM/GUNGAME/RANDOM>" to executor
 			stop
 		if {-gameData::status} is not "WAITING" or "STARTING":
 			send "&cYou are only allowed to set gamemode before game start!" to executor
@@ -178,7 +202,7 @@ command /resetUser [<offline player>] [<text>]:
 command /boosters:
 	trigger:
 		send "&aBoosters:" to executor
-		set {_boostersRaw::*} to cubedAPI_getBoosters("PS_SLADDEN_API_KEY_HERE", true)
+		set {_boostersRaw::*} to cubedAPI_getBoosters("czB8AfsOHGui41m729J3ToxCMXabNpLk22295", true)
 		loop {_boostersRaw::*}:
 			set {_loopBoosterData::*} to {_boostersRaw::%loop-index%} split by ":"
 			set {_boosterNames::*} to api_getPlayerName({_loopBoosterData::1}, false)
@@ -412,11 +436,13 @@ function game_start():
 	set {-gameData::countdown} to (60 * 5) # Countdown: 5 minutes
 	set {-gameData::map} to "DEFAULT"
 	if {-gameData::gamemode} is "RANDOM":
-		set {_randomMapNumber} to random integer between 1 and 100
+		set {_randomMapNumber} to random integer between 1 and 150
 		if {_randomMapNumber} <= 50:
 			set {-gameData::gamemode} to "TDM"
-		else:
+		else if {_randomMapNumber} <= 100:
 			set {-gameData::gamemode} to "FFA"
+		else:
+			set {-gameData::gamemode} to "GUNGAME"
 	game_addTeamAll()
 	loop all players:
 		if {-lastTeleport::%loop-player%} is not set:
@@ -433,7 +459,7 @@ function game_start():
 	send "&eThe random selected gamemode for this round is &6%{-gameData::gamemode}%&e!" to all players
 
 function game_end():
-	if {-gameData::gamemode} is "FFA":
+	if {-gameData::gamemode} is "FFA" or "GUNGAME":
 		set {_winner} to game_getRoundMostKills()
 		if {_winner} is not set:
 			set {_title} to "&6&lSTALEMATE"
@@ -449,8 +475,8 @@ function game_end():
 		set {_title} to "&9&lBLUE TEAM"
 		set {_winTeam} to "BLUE"
 	send "&cThe game has ended, %{_title}% &chas won!" to all players
-	if {-gameData::gamemode} is "FFA":
-		guns_addExp({_winner}, 400, "FFA Win")
+	if {-gameData::gamemode} is "FFA" or "GUNGAME":
+		guns_addExp({_winner}, 400, "%{-gameData::gamemode}% Win")
 	else if {-gameData::gamemode} is "TDM":
 		loop all players:
 			if {-playerTeam::%loop-player%} is {_winTeam}:
@@ -538,6 +564,8 @@ function game_updateSidebar(player: player):
 	set text of id "sidebar-%{_player}%-line15" to "&7%now%"
 	if {-gameData::gamemode} is "FFA":
 		set {_teamDisplay} to "&aFFA"
+	else if {-gameData::gamemode} is "GUNGAME":
+		set {_teamDisplay} to "&aGunGame"
 	else if {-playerTeam::%{_player}%} is "RED":
 		set {_teamDisplay} to "&cRed"
 	else if {-playerTeam::%{_player}%} is "BLUE":
@@ -566,7 +594,7 @@ function game_updateSidebar(player: player):
 	if {-gameData::gamemode} is "TDM":
 		set text of id "sidebar-%{_player}%-line10" to "&c▍ Red Kills: &f%{-gameData::redKills}%"
 		set text of id "sidebar-%{_player}%-line9" to "&9▍ Blue Kills: &f%{-gameData::blueKills}%"
-	else if {-gameData::gamemode} is "FFA":
+	else if {-gameData::gamemode} is "FFA" or "GUNGAME":
 		if {-playerRoundKills::%{_player}%} is not set:
 			set {_playerRoundKillsDisplay} to 0
 		else:
@@ -674,3 +702,8 @@ function game_resetDataAll():
 	wait 5 ticks
 	delete {weaponUnlocked::*}
 	delete {playerData::*}
+
+function game_cleanEntities():
+	kill all armor stands
+	kill all area effect clouds
+	hpBar_reload()
