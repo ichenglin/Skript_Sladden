@@ -64,7 +64,11 @@ function guns_zoomShoot(player: player, tool: item):
 		wait 10 ticks
 		delete {-playerRightMouseAction::%{_player}%}
 
-function guns_use(shooter: entity, shootLocation: location, weapon: item, damage: number, projectileRange: number, ProjectileRadius: number, ProjectilePiercing: number, ProjectileBurst: number, recoil: number, accuracy: number, firerate: number, ammoCapacity: number, headMultiplier: number = 1.8, bodyMultiplier: number = 1.2):
+function guns_use(shooter: entity, weapon: item, gunStats: numbers):
+
+	set {_shootLocation} to {_shooter}'s head
+
+	set {_weaponType} to guns_getGunType({_weapon})
 
 	set {_playerSelectedSlot} to current hotbar slot of {_shooter}
 
@@ -85,11 +89,16 @@ function guns_use(shooter: entity, shootLocation: location, weapon: item, damage
 		if {-playerShootDelay::%{_shooter}%} > now:
 			stop
 
-	set {_loopTimes} to ceil({_ firerate} / 150)
-	set {_delay} to ("%(0.4 / {_loopTimes})% seconds" parsed as time span)
+	if {_weaponType} is "SNIPER_RIFLE":
+		set {_realLoopTimes} to ceil({_gunStats::9} / 150)
+		set {_loopTimes} to 1
+		set {_delay} to ("%(0.4 / {_realLoopTimes})% seconds" parsed as time span)
+	else:
+		set {_loopTimes} to ceil({_gunStats::9} / 150)
+		set {_delay} to ("%(0.4 / {_loopTimes})% seconds" parsed as time span)
 
-	if {_ firerate} < 150:
-		set {_shootDelay} to (0.35 * (150 / {_ firerate}))
+	if {_gunStats::9} < 150:
+		set {_shootDelay} to ((0.4 * (150 / {_gunStats::9})) - 0.05)
 	else:
 		set {_shootDelay} to 0.35
 	set {_nextShotTime} to now
@@ -98,8 +107,6 @@ function guns_use(shooter: entity, shootLocation: location, weapon: item, damage
 	guns_displayCooldown({_shooter},  {_shootDelay})
 
 	set {-playerLastShot::%{_shooter}%} to now
-
-	set {_weaponType} to guns_getGunType({_weapon})
 
 	if {_weaponType} is "SHOTGUN":
 		set {_fireSound} to "minecraft:entity.zombie.break_door_wood"
@@ -122,11 +129,12 @@ function guns_use(shooter: entity, shootLocation: location, weapon: item, damage
 				set slot {_playerSelectedSlot} of {_shooter}'s inventory to {-gunAmmo::%{_ID}%} of {_weapon}
 			else:
 				set slot {_playerSelectedSlot} of {_shooter}'s inventory to {_weapon}
-			send actionbar "&c%uncolored {_weapon}'s name% &f- &c[%{-gunAmmo::%{_ID}%}% / %{_ammoCapacity}%]" to ("%{_shooter}%" parsed as player)
+			send actionbar "&c%uncolored {_weapon}'s name% &f- &c[%{-gunAmmo::%{_ID}%}% / %{_gunStats::10}%]" to ("%{_shooter}%" parsed as player)
 
-		guns_playsound(({_shooter}'s location), {_fireSound}, {_soundPitch})
-		loop {_ProjectileBurst} times:
-			guns_registerShot({_shooter}, {_shootLocation}, {_damage}, {_projectileRange}, {_projectileRadius}, {_projectilePiercing}, {_projectileBurst}, {_recoil}, {_accuracy})
+		guns_playsound(({_shooter}'s head), {_fireSound}, {_soundPitch})
+
+		loop {_gunStats::6} times:
+			guns_registerShot({_shooter}, {_shootLocation}, {_gunStats::*})
 
 		if {-gunAmmo::%{_ID}%} <= 0:
 			guns_reloadGun({_shooter}, {_weapon})
@@ -168,16 +176,16 @@ function guns_melee(attacker: player, victim: entity, weapon: item, damage: numb
 
 	entity_damage({_attacker}, {_victim}, {_finalDamage}, {_weapon}, false, {_isBackstab}, false, true, {_displaySuffix})
 
-function guns_registerShot(shooter: entity, shootLocation: location, damage: number, projectileRange: number, ProjectileRadius: number, ProjectilePiercing: number, ProjectileBurst: number, recoil: number, accuracy: number, headMultiplier: number = 1.8, bodyMultiplier: number = 1.2):
+function guns_registerShot(shooter: entity, shootLocation: location, gunStats: numbers):
 
 	set {_weapon} to {_shooter}'s tool
 
-	guns_recoil({_shooter}, {_recoil}, true)
+	guns_recoil({_shooter}, {_gunStats::7}, true)
 
 	set {_weaponType} to guns_getGunType({_weapon})
 
-	set {_shootLocation} to guns_applyAccuracy({_shootLocation}, {_accuracy})
-	set {_halfRange} to ({_projectileRange} / 2)
+	set {_shootLocation} to guns_applyAccuracy({_shootLocation}, {_gunStats::8})
+	set {_halfRange} to ({_gunStats::3} / 2)
 
 	remove glowing from {_shooter}
 	apply potion of glowing of tier 1 to {_shooter} for 5 seconds
@@ -187,20 +195,22 @@ function guns_registerShot(shooter: entity, shootLocation: location, damage: num
 
 	set {_wallBangBullet} to false
 
-	loop {_projectileRange} times:
+	set {_ProjectilePiercing} to {_gunStats::5}
+
+	loop {_gunStats::3} times:
 		set {_shootLocation} to location 1 meter infront of {_shootLocation}
 		
 		if loop-number > {_halfRange}:
-			set {_rangeDamage} to ({_damage} * 0.8)
+			set {_rangeDamage} to ({_gunStats::1} * 0.8)
 		else:
 			set {_percentage} to (loop-number / {_halfRange})
-			set {_rangeDamage} to ({_damage} - (({_damage} * 0.2) * {_percentage}))
+			set {_rangeDamage} to ({_gunStats::1} - (({_gunStats::1} * 0.2) * {_percentage}))
 
-		set {_hitEntities::*} to guns_checkHitContact({_shootLocation}, {_ProjectileRadius})
+		set {_hitEntities::*} to guns_checkHitContact({_shootLocation}, {_gunStats::4})
 
 		drawDot particle "fireworkspark", center {_shootLocation}, visibleRange 100
 
-		if block at {_shootLocation} != air or water or sapling or sign or torch or vine or ladder or barrier:
+		if block at {_shootLocation} != air or water or sapling or sign or torch or vine or ladder or barrier or iron trapdoor:
 			remove 2 from {_ProjectilePiercing}
 			set {_wallBangBullet} to true
 			if {_ProjectilePiercing} <= 0:
@@ -222,11 +232,11 @@ function guns_registerShot(shooter: entity, shootLocation: location, damage: num
 						set {_invalidEntity} to true
 				if {_invalidEntity} is not set:
 					if guns_confirmHeadshot({_shootLocation}, {_hitEntities::%loop-index%}) is true:
-						set {_finalDamage} to ({_rangeDamage} * {_headMultiplier})
+						set {_finalDamage} to ({_rangeDamage} * {_gunStats::2})
 						set {_displaySuffix} to " &7&o[ʜᴇᴀᴅsʜᴏᴛ]"
 						set {_isHeadshot} to true
 					else:
-						set {_finalDamage} to ({_rangeDamage} * {_bodyMultiplier})
+						set {_finalDamage} to {_rangeDamage}
 						set {_displaySuffix} to ""
 						set {_isHeadshot} to false
 
@@ -269,30 +279,34 @@ function guns_updateStats(shooter: entity, item: item):
 	loop {_attachmentStats::*}:
 		set {_attachmentStats::%loop-index%} to ({_attachmentStats::%loop-index%} parsed as number)
 
-	set {_damage} to item_getStat({_item}, "Damage")
+	set {_weaponOriginalStats::*} to item_getAllStats({_item})
+
+	set {_damage} to {_weaponOriginalStats::1}
 	if {_attachmentStats::1} is not 0:
 		set {_damage} to ({_damage} + ({_damage} * {_attachmentStats::1}))
 
-	set {_projectileRange} to item_getStat({_item}, "Projectile Range")
-	set {_projectileRadius} to item_getStat({_item}, "Projectile Radius")
+	set {_projectileHeadshotMultiplier} to {_weaponOriginalStats::2}
 
-	set {_projectilePiercing} to item_getStat({_item}, "Projectile Piercing")
+	set {_projectileRange} to {_weaponOriginalStats::3}
+	set {_projectileRadius} to {_weaponOriginalStats::4}
+
+	set {_projectilePiercing} to {_weaponOriginalStats::5}
 	set {_projectilePiercing} to ({_projectilePiercing} + {_attachmentStats::4})
 
-	set {_projectileBurst} to item_getStat({_item}, "Projectile Burst")
+	set {_projectileBurst} to {_weaponOriginalStats::6}
 	if {_attachmentStats::3} is not 0:
 		set {_projectileBurst} to round({_projectileBurst} + ({_projectileBurst} * {_attachmentStats::3}))
 
-	set {_recoil} to item_getStat({_item}, "Recoil")
+	set {_recoil} to {_weaponOriginalStats::7}
 
-	set {_accuracy} to item_getStat({_item}, "Accuracy")
+	set {_accuracy} to {_weaponOriginalStats::8}
 	if {_attachmentStats::2} is not 0:
 		set {_accuracy} to round({_accuracy} + ({_accuracy} * {_attachmentStats::2}))
 
-	set {_firerate} to item_getStat({_item}, "Firerate")
-	set {_ammoCapacity} to item_getStat({_item}, "Ammo Capacity")
+	set {_firerate} to {_weaponOriginalStats::9}
+	set {_ammoCapacity} to {_weaponOriginalStats::10}
 	set {_ammoCapacity} to ({_ammoCapacity} + {_attachmentStats::5})
-	set {_itemData} to "%{_item}'s name%:%{_damage}%:%{_projectileRange}%:%{_projectileRadius}%:%{_projectilePiercing}%:%{_projectileBurst}%:%{_recoil}%:%{_accuracy}%:%{_firerate}%:%{_ammoCapacity}%"
+	set {_itemData} to "%{_damage}%:%{_projectileHeadshotMultiplier}%:%{_projectileRange}%:%{_projectileRadius}%:%{_projectilePiercing}%:%{_projectileBurst}%:%{_recoil}%:%{_accuracy}%:%{_firerate}%:%{_ammoCapacity}%"
 	set {-selectedGunData::%{_shooter}%} to {_itemData}
 
 	operator_sendDebug("Weapon Select Update: %{_shooter}% -> %{-selectedGunData::%{_shooter}%}%")
@@ -306,38 +320,19 @@ function guns_updateWalkSpeed(shooter: entity, item: item):
 	else:
 		set {_shooter}'s walk speed to 0.2
 
-function guns_getStats(shooter: entity, item: item) :: numbers:
-	set {_damage} to item_getStat({_item}, "Damage")
-	set {_projectileRange} to item_getStat({_item}, "Projectile Range")
-	set {_projectileRadius} to item_getStat({_item}, "Projectile Radius")
-	set {_projectilePiercing} to item_getStat({_item}, "Projectile Piercing")
-	set {_projectileBurst} to item_getStat({_item}, "Projectile Burst")
-	set {_recoil} to item_getStat({_item}, "Recoil")
-	set {_accuracy} to item_getStat({_item}, "Accuracy")
-	set {_firerate} to item_getStat({_item}, "Firerate")
-	set {_ammoCapacity} to item_getStat({_item}, "Ammo Capacity")
-	add 0 to {_return::*} # NAME IGNORED (NAME = TEXT/ RETURN = NUMBER
-	add {_damage} to {_return::*}
-	add {_projectileRange} to {_return::*}
-	add {_projectileRadius} to {_return::*}
-	add {_projectilePiercing} to {_return::*}
-	add {_projectileBurst} to {_return::*}
-	add {_recoil} to {_return::*}
-	add {_accuracy} to {_return::*}
-	add {_firerate} to {_return::*}
-	add {_ammoCapacity} to {_return::*}
-	return {_return::*}
-
 function guns_shootWithStats(shooter: entity, weapon: item, accuracyMultiplier: number = 1, damageMultiplier: number = 1):
-	set {_datas::*} to {-selectedGunData::%{_shooter}%} split by ":"
+	set {_gunStats::*} to {-selectedGunData::%{_shooter}%} split by ":"
 
-	if {_datas::2} is "0":
+	if {_gunStats::1} is "0":
 		stop
 
-	loop {_datas::*}:
-		if "%loop-index%" is not "1":
-			set {_datas::%loop-index%} to ({_datas::%loop-index%} parsed as number)
-	guns_use({_shooter}, ({_shooter}'s head), {_weapon}, ({_datas::2} * {_damageMultiplier}),{_datas::3},{_datas::4},{_datas::5},{_datas::6},{_datas::7},({_datas::8} * {_accuracyMultiplier}),{_datas::9},{_datas::10})
+	loop {_gunStats::*}:
+		set {_gunStats::%loop-index%} to ({_gunStats::%loop-index%} parsed as number)
+
+	set {_gunStats::1} to ({_gunStats::1} * {_damageMultiplier})
+	set {_gunStats::8} to ({_gunStats::8} * {_accuracyMultiplier})
+
+	guns_use({_shooter}, {_weapon}, {_gunStats::*})
 
 #function guns_runShoot(shooter: entity, weapon: item, accuracyMultiplier: number = 1, damageMultiplier: number = 1):
 #	set {_datas::*} to {-selectedGunData::%{_shooter}%} split by ":"
@@ -351,39 +346,29 @@ function guns_shootWithStats(shooter: entity, weapon: item, accuracyMultiplier: 
 #			exit 1 loop
 #		if {-playerRightMouseAction::%{_shooter}%} is not "SHOOT":
 #			exit 1 loop
-#		guns_use({_shooter}, ({_shooter}'s head), {_weapon}, ({_datas::2} * {_damageMultiplier}),{_datas::3},{_datas::4},{_datas::5},{_datas::6},{_datas::7},({_datas::8} * {_accuracyMultiplier}),{_datas::9},{_datas::10})
+#		guns_use({_shooter}, {_weapon}, ({_datas::2} * {_damageMultiplier}),{_datas::3},{_datas::4},{_datas::5},{_datas::6},{_datas::7},({_datas::8} * {_accuracyMultiplier}),{_datas::9},{_datas::10})
 #		wait 8 ticks
 
 function guns_checkHitContact(bulletLocation: location, bulletRadius: number) :: entities:
 	loop all entities in world of {_bulletLocation}:
 		if {_loopEntity} != {_attackerFactors::1}:
 			if entity_isLivingEntity(loop-entity):
-				if guns_confirmHit({_bulletLocation}, loop-entity, {_bulletRadius}):
+				if guns_confirmHit((loop-entity's location), {_bulletLocation}, ({_bulletRadius} - 0.5)):
 					add loop-entity to {_hitEntities::*}
 	return {_hitEntities::*}
 
-function guns_confirmHit(bulletCenter: location, entity: entity, bulletRadius: number = 0.5) :: boolean:
-	if {_bulletCenter}'s world != {_entity}'s world:
-		return false
-	if abs({_bulletCenter}'s x coordinate - {_entity}'s x coordinate) > {_bulletRadius}:
-		if abs({_bulletCenter}'s x coordinate - {_entity}'s head's x coordinate) > {_bulletRadius}:
-			return false
-	if abs({_bulletCenter}'s z coordinate - {_entity}'s z coordinate) > {_bulletRadius}:
-		if abs({_bulletCenter}'s z coordinate - {_entity}'s head's z coordinate) > {_bulletRadius}:
-			return false
-	if {_bulletCenter}'s y coordinate > ({_entity}'s head's y coordinate + 0.25):
-		if abs({_bulletCenter}'s y coordinate - {_entity}'s y coordinate) > {_bulletRadius}:
-			if abs({_bulletCenter}'s y coordinate - {_entity}'s head's y coordinate) > {_bulletRadius}:
-				return false
-	if {_bulletCenter}'s y coordinate < {_entity}'s y coordinate:
-		if abs({_bulletCenter}'s y coordinate - {_entity}'s y coordinate) > {_bulletRadius}:
-			if abs({_bulletCenter}'s y coordinate - {_entity}'s head's y coordinate) > {_bulletRadius}:
-				return false
-	return true
+function guns_confirmHit(victimLocation: location, bulletLocation: location, hitboxExtendSize: number = 0) :: boolean:
+	set {_inHitbox} to true
+	set {_victimBodyLocation} to location 1 meter above {_victimLocation}
+	if abs(({_victimLocation}'s x coords) - ({_bulletLocation}'s x coords)) > (0.5 + {_hitboxExtendSize}):
+		set {_inHitbox} to false
+	else if abs(({_victimLocation}'s z coords) - ({_bulletLocation}'s z coords)) > (0.5 + {_hitboxExtendSize}):
+		set {_inHitbox} to false
+	else if abs(({_victimBodyLocation}'s y coords) - ({_bulletLocation}'s y coords)) > (1 + {_hitboxExtendSize}):
+		set {_inHitbox} to false
+	return {_inHitbox}
 
 function guns_confirmHeadshot(bulletCenter: location, entity: entity, bulletRadius: number = 0.5) :: boolean:
-	if {_bulletCenter}'s world != {_entity}'s world:
-		return false
 	if abs({_bulletCenter}'s x coordinate - {_entity}'s head's x coordinate) > {_bulletRadius}:
 		return false
 	if abs({_bulletCenter}'s z coordinate - {_entity}'s head's z coordinate) > {_bulletRadius}:
@@ -429,11 +414,12 @@ function entity_damage(attacker: entity, victim: entity, damage: number, weapon:
 
 	operator_sendDebug("Damage: (ATTACKER=%{_attacker}%, VICTIM=%{_victim}%) %{_damage}%")
 
-	if {_victim}'s gamemode is creative:
-		stop
+	if {_victim} is a player:
+		if {_victim}'s gamemode is not survival or adventure:
+			stop
 
 	if {_attackerNotExist} is false:
-		if {-gameData::gamemode} is not "FFA":
+		if {-gameData::gamemode} is "TDM":
 			if {-playerTeam::%{_attacker}%} is {-playerTeam::%{_victim}%}:
 				stop
 
@@ -451,7 +437,7 @@ function entity_damage(attacker: entity, victim: entity, damage: number, weapon:
 
 	entity_blood({_victim})
 	if {_attackerNotExist} is false:
-		guns_playsound(({_attacker}'s location), "entity.arrow.hit_player", 1)
+		guns_playsound(({_attacker}'s head), "entity.arrow.hit_player", 1)
 
 	if {_testDummyBypass} is true:
 		if {_victim}'s name is "&f":
@@ -515,7 +501,7 @@ function entity_death(attacker: entity, victim: entity, weapon: item, isHeadshot
 			guns_addExp({_attacker}, 25, "Backstab")
 		if {_isWallBang}:
 			guns_addExp({_attacker}, 25, "Wall Bang")
-	if {_attacker} and {_victim} is a player:
+	if {_victim} is a player:
 		if {_attackerNotExist} is false:
 			add 1 to {-playerKills::%{_attacker}%}
 		add 1 to {-playerDeaths::%{_victim}%}
@@ -544,12 +530,12 @@ function entity_death(attacker: entity, victim: entity, weapon: item, isHeadshot
 		wait 7 ticks
 		entity_heal({_victim})
 		guns_getInventory({_victim})
-	else if {_attacker} is a player:
-		kill {_victim}
-	if {_attackerNotExist} is false:
+	if {_attackerNotExist} is true:
+		set {_victimTitle} to "Killed by Unknown"
+	else:
 		set {_attackerSubtitle} to "Killed %{_victim}%"
 		send title "&f" with subtitle "&c%api_toSmallCap({_attackerSubtitle})%" to {_attacker} for 2 second with 0 tick fadein and 0 tick fadeout
-	set {_victimTitle} to "Killed by %{_attacker}%"
+		set {_victimTitle} to "Killed by %{_attacker}%"
 	set {_victimSubtitle} to "with %{_weapon}'s name%"
 	send title "&c%api_toSmallCap({_victimTitle})%" with subtitle "&e%api_toSmallCap({_victimSubtitle})%" to {_victim} for 2 second with 0 tick fadein and 0 tick fadeout
 		
@@ -577,7 +563,7 @@ function entity_updateTab(player: player):
 	set ("%{_player}%" parsed as player)'s tablist name to "&e&l%{-playerStatLevel::%{_player}%}% %entity_getTeamColor({_player})%%{_player}% &6[%{-playerKills::%{_player}%}% - %{-playerDeaths::%{_player}%}%]"
 
 function entity_getTeamColor(entity: entity) :: text:
-	if {-gameData::gamemode} is "FFA":
+	if {-gameData::gamemode} is "FFA" or "GUNGAME":
 		set {_nameColor} to "&a"
 	else if {-playerTeam::%{_entity}%} is "RED":
 		set {_nameColor} to "&c"
@@ -592,12 +578,11 @@ function entity_getTeamArmor(entity: entity):
 	set {_entity}'s chestplate to leather chestplate
 	set {_entity}'s leggings to leather leggings
 	set {_entity}'s boots to leather boots
-	if {-gameData::gamemode} is "FFA":
-		set {_armorColor} to WHITE
-	else if {-playerTeam::%{_entity}%} is "RED":
-		set {_armorColor} to RED
-	else if {-playerTeam::%{_entity}%} is "BLUE":
-		set {_armorColor} to BLUE
+	if {-gameData::gamemode} is "TDM":
+		if {-playerTeam::%{_entity}%} is "RED":
+			set {_armorColor} to RED
+		else if {-playerTeam::%{_entity}%} is "BLUE":
+			set {_armorColor} to BLUE
 	else:
 		set {_armorColor} to WHITE
 	dye {_entity}'s helmet {_armorColor}
@@ -668,16 +653,23 @@ function guns_toSpawnpoint(entity: entity, spawnpointID: number):
 		hpBar_safeTeleport({_entity}, (location at (-45.5, 49, 131.5) in world("game")))
 
 function guns_getInventory(player: player):
+	delete {-isReloading::%{_player}%}
+	wait 5 ticks
 	clear {_player}'s inventory
 	if {-gameData::status} is "WAITING" or "STARTING":
 		set slot 0 of {_player}'s inventory to clock named "&6Gun Selector"
 		set slot 1 of {_player}'s inventory to book named "&6Game Introduction"
 	else if {-gameData::status} is "STARTED":
-		gunSelect_getSelectedGuns({_player}, 0, "PRIMARY")
-		gunSelect_getSelectedGuns({_player}, 1, "SECONDARY")
-		set slot 2 of {_player}'s inventory to iron sword named "&aKnife" with lore "&e60 Damage"
-		set slot 7 of {_player}'s inventory to book named "&6Game Introduction"
-		set slot 8 of {_player}'s inventory to clock named "&6Gun Selector"
+		if {-gameData::gamemode} is "GUNGAME":
+			gunSelect_getRandomGun({_player}, "ALL", 0)
+			set slot 1 of {_player}'s inventory to iron sword named "&aKnife" with lore "&e60 Damage"
+			set slot 8 of {_player}'s inventory to book named "&6Game Introduction"
+		else:
+			gunSelect_getSelectedGuns({_player}, 0, "PRIMARY")
+			gunSelect_getSelectedGuns({_player}, 1, "SECONDARY")
+			set slot 2 of {_player}'s inventory to iron sword named "&aKnife" with lore "&e60 Damage"
+			set slot 7 of {_player}'s inventory to book named "&6Game Introduction"
+			set slot 8 of {_player}'s inventory to clock named "&6Gun Selector"
 		entity_getTeamArmor({_player})
 	set {_tool} to {_player}'s tool
 	guns_updateStats({_player}, {_tool})
@@ -694,7 +686,7 @@ function guns_reloadGun(shooter: player, weapon: item):
 		stop
 	set {_ammoCapacity} to ("%{_datas::10}%" parsed as number)
 	send "&eReloading..." to {_shooter}
-	guns_playsound({_shooter}, "minecraft:block.iron_door.open", 2)
+	guns_playsound(({_shooter}'s head), "minecraft:block.iron_door.open", 2)
 
 	set {_weaponType} to guns_getGunType({_weapon})
 
@@ -732,7 +724,7 @@ function guns_reloadGun(shooter: player, weapon: item):
 			remove 10 from {_displayTimes}
 		if {_weaponType} is "SHOTGUN":
 			if {_soundCountdown} >= {_soundTimes}:
-				guns_playsound({_shooter}, "minecraft:entity.irongolem.attack", 1)
+				guns_playsound(({_shooter}'s head), "minecraft:entity.irongolem.attack", 1)
 				set {_soundCountdown} to 0
 			else:
 				add 1 to {_soundCountdown}
@@ -745,7 +737,7 @@ function guns_reloadGun(shooter: player, weapon: item):
 		if loop-number >= {_loopTimes}:
 			set durability of {_weapon} to 0
 			set slot {_playerSelectedSlot} of {_shooter}'s inventory to {_ammoCapacity} of {_weapon}
-			guns_playsound({_shooter}, "minecraft:block.piston.contract", 2)
+			guns_playsound(({_shooter}'s head), "minecraft:block.piston.contract", 2)
 			set {_ID} to "%{_shooter}%.%{_weapon}'s name%"
 			set {-gunAmmo::%{_ID}%} to {_ammoCapacity}
 			send "&aSuccessfully reloaded your gun! [%{_ammoCapacity}% / %{_ammoCapacity}%]" to {_shooter}
@@ -759,7 +751,7 @@ function guns_reloadGun(shooter: player, weapon: item):
 
 
 function guns_setFullAmmo(shooter: entity, gun: item):
-	set {_datas::*} to guns_getStats({_shooter}, {_gun})
+	set {_datas::*} to item_getAllStats({_gun})
 	set {_ID} to "%{_shooter}%.%{_gun}'s name%"
 	set {-gunAmmo::%{_ID}%} to {_datas::10}
 
