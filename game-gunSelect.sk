@@ -41,7 +41,6 @@ function gunSelect_open(player: player, type: text = "PRIMARY", type2: text = "U
 		gunSelect_addSelector({_player}, 40, "&aMachine Pistol", {_type})
 		gunSelect_addSelector({_player}, 41, "&aRevolver", {_type})
 		gunSelect_addSelector({_player}, 42, "&aOther", {_type})
-		gunSelect_addSelector({_player}, 44, "&aLimited Time", {_type})
 	set {_slot} to 0
 	loop 9 times:
 		format a gui slot {_slot} of {_player} with stained glass:0 named "&7" with lore "" to do nothing
@@ -261,7 +260,7 @@ function gunSelect_getSelectedGuns(player: player, slot: number, type: text = "P
 		set {_defaultWeapon} to "PISTOL"
 	if {-playerSelectType%{_selectedGunChannel}%::%{_player}%} is not set:
 		set {_ID} to "%{_player}%.%{-guns_%{_defaultWeapon}%::1}'s name%"
-		set {_datas::*} to guns_getStats({_player}, {-guns_%{_defaultWeapon}%::1})
+		set {_datas::*} to item_getAllStats({-guns_%{_defaultWeapon}%::1})
 		set {-gunAmmo::%{_ID}%} to ("%{_datas::10}%" parsed as number)
 		set slot {_slot} of {_player}'s inventory to {-gunAmmo::%{_ID}%} of {-guns_%{_defaultWeapon}%::1}
 		set {-playerSelectType%{_selectedGunChannel}%::%{_player}%} to {_defaultWeaponDisplay}
@@ -277,7 +276,7 @@ function gunSelect_getSelectedGuns(player: player, slot: number, type: text = "P
 			operator_sendDebug("Search Weapon: (%{_player}%) %{_selectID}% -> %{-playerSelectType%{_selectedGunChannel}%::%{_player}%}%")
 			if {_selectID} is {-playerSelectType%{_selectedGunChannel}%::%{_player}%}:
 				set {_ID} to "%{_player}%.%{_loopGuns::%loop-index%}'s name%"
-				set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
+				set {_datas::*} to item_getAllStats({_loopGuns::%loop-index%})
 				set {-gunAmmo::%{_ID}%} to ("%{_datas::10}%" parsed as number)
 				set slot {_slot} of {_player}'s inventory to {-gunAmmo::%{_ID}%} of {_loopGuns::%loop-index%}
 				operator_sendDebug("Ammo Refill: (%{_player}%) %{-gunAmmo::%{_ID}%}% -> %{_datas::*}%")
@@ -285,7 +284,7 @@ function gunSelect_getSelectedGuns(player: player, slot: number, type: text = "P
 
 function gunSelect_getGun(player: player, gunType: text, gunID: text, inventorySlot: number):
 	if {_gunType} is "ALL":
-		add "ASSAULT_RIFLE" and "PDW" and "LMG" and "CARBINE" and "DMR" and "SHOTGUN" and "SNIPER_RIFLE" and "PISTOL" and "MACHINE_PISTOL" or "REVOLVER" or "OTHER" or "PROTOTYPE" to {_allGunTypes::*}
+		add "ASSAULT_RIFLE" and "PDW" and "LMG" and "DMR" and "SHOTGUN" and "SNIPER_RIFLE" and "PISTOL" and "MACHINE_PISTOL" or "REVOLVER" or "OTHER" or "PROTOTYPE" to {_allGunTypes::*}
 		loop (amount of {_allGunTypes::*}) times:
 			set {_loopGuns::*} to {-guns_%{_allGunTypes::%loop-number%}%::*}
 			loop {_loopGuns::*}:
@@ -293,7 +292,7 @@ function gunSelect_getGun(player: player, gunType: text, gunID: text, inventoryS
 				set {_selectID} to api_toUpperCase({_selectID})
 				replace all " " with "_" in {_selectID}
 				if {_selectID} is {_gunID}:
-					set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
+					set {_datas::*} to item_getAllStats({_loopGuns::%loop-index%})
 					set slot {_inventorySlot} of {_player} to {_datas::10} of {_loopGuns::%loop-index%}
 					guns_setFullAmmo({_player}, {_loopGuns::%loop-index%})
 					stop
@@ -304,7 +303,17 @@ function gunSelect_getGun(player: player, gunType: text, gunID: text, inventoryS
 			set {_selectID} to api_toUpperCase({_selectID})
 			replace all " " with "_" in {_selectID}
 			if {_selectID} is {_gunID}:
-				set {_datas::*} to guns_getStats({_player}, {_loopGuns::%loop-index%})
+				set {_datas::*} to item_getAllStats({_loopGuns::%loop-index%})
 				set slot {_inventorySlot} of {_player} to {_datas::10} of {_loopGuns::%loop-index%}
 				guns_setFullAmmo({_player}, {_loopGuns::%loop-index%})
 				stop
+
+function gunSelect_getRandomGun(player: player, gunType: text, inventorySlot: number):
+	add "ASSAULT_RIFLE" and "PDW" and "LMG" and "DMR" and "SHOTGUN" and "SNIPER_RIFLE" and "PISTOL" and "MACHINE_PISTOL" or "REVOLVER" or "OTHER" to {_allGunTypes::*}
+	set {_randomTypeNumber} to random integer between 1 and (amount of {_allGunTypes::*})
+	set {_typeGuns::*} to {-guns_%{_allGunTypes::%{_randomTypeNumber}%}%::*}
+	set {_randomGunNumber} to random integer between 1 and (amount of {_typeGuns::*})
+	set {_selectedGun} to {_typeGuns::%{_randomGunNumber}%}
+	set {_datas::*} to item_getAllStats({_selectedGun})
+	set slot {_inventorySlot} of {_player} to {_datas::10} of {_selectedGun}
+	guns_setFullAmmo({_player}, {_selectedGun})
