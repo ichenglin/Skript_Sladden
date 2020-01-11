@@ -1,5 +1,13 @@
-# The new bullet detection system is made for improve performace purpose.
-# But then abandoned due to bullet piercing detection make performce worse than before.
+# +-----------------------------------------+
+# +-----------------------------------------+
+# +-----------------------------------------+
+# The new bullet detection system is made
+# for improve performace purpose. But then
+# abandoned due to bullet piercing detection
+# make performce worse than before.
+# +-----------------------------------------+
+# +-----------------------------------------+
+# +-----------------------------------------+
 
 function guns_shoot(shooter: player, gunStats: numbers):
 	set {_loopTimes} to ceil({_gunStats::8} / 150)
