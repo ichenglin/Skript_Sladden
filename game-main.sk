@@ -202,7 +202,7 @@ command /resetUser [<offline player>] [<text>]:
 command /boosters:
 	trigger:
 		send "&aBoosters:" to executor
-		set {_boostersRaw::*} to cubedAPI_getBoosters("czB8AfsOHGui41m729J3ToxCMXabNpLk22295", true)
+		set {_boostersRaw::*} to cubedAPI_getBoosters("PS_SLADDEN_API_KEY_HERE", true)
 		loop {_boostersRaw::*}:
 			set {_loopBoosterData::*} to {_boostersRaw::%loop-index%} split by ":"
 			set {_boosterNames::*} to api_getPlayerName({_loopBoosterData::1}, false)
