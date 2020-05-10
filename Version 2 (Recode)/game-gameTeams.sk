@@ -1,0 +1,67 @@
+function game_gameTeams_setPlayerTeam(player: player, team: text):
+	set {-gameSystem::playerTeam::%{_player}%} to {_team}
+	game_gameLogs_sendMessage("Added player %{_player}% to team %{_team}%.")
+
+function game_gameTeams_getPlayerTeam(player: player) :: text:
+	return {-gameSystem::playerTeam::%{_player}%}
+
+function game_gameTeams_getTeamPlayers(team: text) :: offline players:
+	loop {-gameSystem::playerTeam::*}:
+		if {-gameSystem::playerTeam::%loop-index%} is {_team}:
+			add (loop-index parsed as offline player) to {_teamPlayers::*}
+	return {_teamPlayers::*}
+
+function game_gameTeams_removePlayerTeam(player: player):
+	delete {-gameSystem::playerTeam::%{_player}%}
+
+function game_gameTeams_removeTeamPlayers(team: text):
+	set {_teamPlayers::*} to game_gameTeams_getTeamPlayers({_team})
+	loop {_teamPlayers::*}:
+		game_gameTeams_removePlayerTeam({_teamPlayers::%loop-index%})
+
+function game_gameTeams_addPlayersToTeams(players: players, teams: texts):
+	loop (amount of {_players::*}) times:
+		while (true):
+			set {_randomNum} to random integer between 1 and 99999999
+			if {_randomPlayerOrder::%{_randomNum}%} is not set:
+				set {_randomPlayerOrder::%{_randomNum}%} to {_players::%loop-number%}
+				exit 1 loop
+	loop {_randomPlayerOrder::*}:
+		game_gameTeams_addPlayerToEqualTeams({_randomPlayerOrder::%loop-index%}, {_teams::*})
+
+function game_gameTeams_addPlayerToEqualTeams(player: player, teams: texts):
+	game_gameTeams_removePlayerTeam({_player})
+	set {_lowestTeamPlayers} to 999999
+	loop (amount of {_teams::*}) times:
+		delete {_loopTeamPlayers::*}
+		set {_loopTeamPlayers::*} to game_gameTeams_getTeamPlayers({_teams::%loop-number%})
+		if (amount of {_loopTeamPlayers::*}) < {_lowestTeamPlayers}:
+			set {_lowestTeamPlayers} to (amount of {_loopTeamPlayers::*})
+			set {_lowestTeam} to {_teams::%loop-number%}
+	game_gameTeams_setPlayerTeam({_player}, {_lowestTeam})
+
+function game_gameTeams_setTeamColor(team: text, nameColor: text, armorColor: color):
+	set {-gameSystem::teamSettings::%{_team}%_NAME_COLOR} to {_nameColor}
+	set {-gameSystem::teamSettings::%{_team}%_ARMOR_COLOR} to {_armorColor}
+
+function game_gameTeams_getTeamColor(team: text, colorType: text) :: object:
+	if {_colorType} is "NAME":
+		return (check [{-gameSystem::teamSettings::%{_team}%_NAME_COLOR} is set] ? {-gameSystem::teamSettings::%{_team}%_NAME_COLOR} : "&e")
+	else if {_colorType} is "ARMOR":
+		return (check [{-gameSystem::teamSettings::%{_team}%_ARMOR_COLOR} is set] ? {-gameSystem::teamSettings::%{_team}%_ARMOR_COLOR} : GRAY)
+
+function game_gameTeams_clearTeamData():
+	delete {-gameSystem::playerTeam::*}
+	delete {-gameSystem::teamSettings::*}
+
+function game_gameTeams_playerGetTeamArmor(player: player):
+	set {_playerTeam} to game_gameTeams_getPlayerTeam({_player})
+	set {_armorColor} to {-gameSystem::teamSettings::%{_playerTeam}%_ARMOR_COLOR}
+	set {_player}'s helmet to leather helmet
+	set {_player}'s chestplate to leather chestplate
+	set {_player}'s leggings to leather leggings
+	set {_player}'s boots to leather boots
+	dye {_player}'s helmet {_armorColor}
+	dye {_player}'s chestplate {_armorColor}
+	dye {_player}'s leggings {_armorColor}
+	dye {_player}'s boots {_armorColor}

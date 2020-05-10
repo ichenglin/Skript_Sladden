@@ -1,0 +1,24 @@
+function game_meleeCaculation_playerAttack(attacker: player, victim: player):
+	set {_attackWeapon} to ({_attacker}'s tool)
+	set {_meleeStats::*} to game_itemsHandler_getGunData({_attackWeapon})
+	set {_isBackstab} to (check [game_meleeCaculation_getDirectionDifference({_attacker}, {_victim}) < 45])
+	set {_damage} to ({_isBackstab} ? ({_meleeStats::1} * {_meleeStats::2}) : ({_meleeStats::1} * 1))
+	game_damageCaculation_damagePlayer({_attacker}, {_victim}, {_damage}, "MELEE_DAMAGE", ({_isBackstab} ? "BACKSTAB" : ""))
+
+function game_meleeCaculation_getDirectionDifference(player: player, target: player) :: number:
+	set {_playerDegree} to (({_player}'s yaw) + 180)
+	set {_targetDegree} to (({_target}'s yaw) + 180)
+	set {_degreeDifference} to 360
+	loop 3 times:
+		if loop-number is 1:
+			set {_loopPlayerDegree} to {_playerDegree}
+			set {_loopTargetDegree} to {_targetDegree}
+		else if loop-number is 2:
+			set {_loopPlayerDegree} to ({_playerDegree} + 360)
+			set {_loopTargetDegree} to {_targetDegree}
+		else if loop-number is 3:
+			set {_loopPlayerDegree} to {_playerDegree}
+			set {_loopTargetDegree} to ({_targetDegree} + 360)
+		set {_loopValue} to abs({_loopPlayerDegree} - {_loopTargetDegree})
+		set {_degreeDifference} to (check [{_loopValue} < {_degreeDifference}] ? {_loopValue} : {_degreeDifference})
+	return {_degreeDifference}

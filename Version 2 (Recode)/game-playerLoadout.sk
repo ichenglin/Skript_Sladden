@@ -1,0 +1,150 @@
+function game_playerLoadout_openLoadout(player: player, loadoutID: text = "LOADOUT_1"):
+	game_playerLoadout_loadoutDefault({_player}, {_loadoutID})
+	set {_playerLoadoutID} to "%{_player}'s UUID%.%{_loadoutID}%"
+	open chest with 6 row named "&cLoadout" to {_player}
+	loop 2 times:
+		loop 9 times:
+			format a gui slot (-27 + ((loop-number-1) * 36) + ((loop-number-2) - 1)) of {_player} with black glass named "&f" to do nothing
+	format a gui slot 2 of {_player} with black glass named "&f" to do nothing
+	set {_weaponCategories::*} to game_gameData_getWeaponCategories()
+	loop (amount of {_weaponCategories::*}) times:
+		set {_loopCategory} to game_playerLoadout_convertID({_weaponCategories::%loop-number%})
+		add "&e%{_weaponCategories::%loop-number%}% Weapon: &f%{-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loopCategory}%_WEAPON_ID}%" to {_loadoutSelectedDisplay::*}
+	set {_loadoutSelectedDisplayAll} to join {_loadoutSelectedDisplay::*} with delimiter "||"
+	format a gui slot 49 of {_player} with book named "&cSelected Weapons" with lore "&f||%{_loadoutSelectedDisplayAll}%||&f" to do nothing
+	loop (amount of {_weaponCategories::*}) times:
+		game_playerLoadout_loadoutFormat({_player}, {_loadoutID}, (loop-number - 1), "CATEGORY", {_weaponCategories::%loop-number%})
+	set {_weaponClasses::*} to game_gameData_getWeaponClasses({-playerLoadout::%{_playerLoadoutID}%::SELECTED_CATEGORY})
+	loop (amount of {_weaponClasses::*}) times:
+		game_playerLoadout_loadoutFormat({_player}, {_loadoutID}, (2 + loop-number), "CLASS", {_weaponClasses::%loop-number%})
+	set {_selectedClassWeapons::*} to game_gameData_getWeaponsInClass({-playerLoadout::%{_playerLoadoutID}%::SELECTED_CLASS})
+	loop (amount of {_selectedClassWeapons::*}) times:
+		game_playerLoadout_displayWeapon({_player}, {_loadoutID}, (17 + loop-number), {_selectedClassWeapons::%loop-number%}, {-playerLoadout::%{_playerLoadoutID}%::SELECTED_CATEGORY}, {-playerLoadout::%{_playerLoadoutID}%::SELECTED_CLASS})
+
+function game_playerLoadout_openLoadout_itemPurchase(player: player, itemName: text, itemID: text, creditsCost: number):
+	set {_priceDisplay} to (check [{_creditsCost} > 0] ? "&f%{_creditsCost}% Credits" : "&aFree")
+	set {_purchaseInfo} to book named "&aConfirm Purchase Item" with lore "&f||&eItem: &f%uncolored {_itemName}%||&ePrice: &f%{_priceDisplay}%"
+	open "HOPPER" named "&cConfirm Purchase" to {_player}
+	format a gui slot 2 of {_player} with {_purchaseInfo} to do nothing
+	format a gui slot 0 of {_player} with (light green stained glass named "&aConfirm" with lore "&eClick to confirm purchase") to close then run function game_playerLoadout_openLoadout_itemPurchase_confirm({_player}, {_itemName}, {_itemID}, {_creditsCost})
+	format a gui slot 4 of {_player} with (red stained glass named "&cCancel" with lore "&eClick to cancel purchase") to close
+
+function game_playerLoadout_openLoadout_itemPurchase_confirm(player: player, itemName: text, itemID: text, creditsCost: number):
+	if {-playerLoadedData::%{_player}%_REMAIN_CREDITS} < {_creditsCost}:
+		send "&cYou dont have enough credits to purchase this item!" to {_player}
+		stop
+	send "&eYou have successfully purchased &6%uncolored {_itemName}%&e!" to {_player}
+	game_playerDataHandler_loadPlayerData_playerUseCredits({_player}, {_creditsCost}, "Item Purchase")
+	set {-playerLoadedData::%{_player}%_SHOP_PURCHASE::%{_itemID}%} to true
+
+function game_playerLoadout_loadoutFormat(player: player, loadoutID: text, formatSlot: number, loadoutType: text, loadoutValue: text):
+	set {_playerLoadoutID} to "%{_player}'s UUID%.%{_loadoutID}%"
+	if {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loadoutType}%} is game_playerLoadout_convertID({_loadoutValue}):
+		format a gui slot {_formatSlot} of {_player} with light green clay named "&e&l%{_loadoutValue}%" with lore "&f||&a&lSELECTED" to do nothing
+	else:
+		format a gui slot {_formatSlot} of {_player} with red clay named "&e&l%{_loadoutValue}%" with lore "&f||&eClick to Select." to close then run function game_playerLoadout_loadoutSelect({_player}, {_loadoutID}, {_loadoutType}, {_loadoutValue})
+
+function game_playerLoadout_loadoutSelect(player: player, loadoutID: text, loadoutType: text, loadoutValue: text, nullableLoadoutValue: text = ""):
+	set {_playerLoadoutID} to "%{_player}'s UUID%.%{_loadoutID}%"
+	if {_loadoutType} is "CATEGORY":
+		set {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loadoutType}%} to game_playerLoadout_convertID({_loadoutValue})
+		set {_categoryClasses::*} to game_gameData_getWeaponClasses(game_playerLoadout_convertID({_loadoutValue}))
+		set {-playerLoadout::%{_playerLoadoutID}%::SELECTED_CLASS} to game_playerLoadout_convertID({_categoryClasses::1})
+	else if {_loadoutType} is "CLASS":
+		set {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loadoutType}%} to game_playerLoadout_convertID({_loadoutValue})
+	else if {_loadoutType} is "PRIMARY_WEAPON" or "SECONDARY_WEAPON":
+		set {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loadoutType}%_ID} to game_playerLoadout_convertID({_loadoutValue})
+		set {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loadoutType}%_CLASS} to {_nullableLoadoutValue}
+		send "&aYou have selected &e%{_loadoutValue}% &aas your &e%{_loadoutType}%&a!" to {_player}
+		game_ammoCaculation_clearAmmo({_player}, {_loadoutValue})
+		if {-gameSystem::gameStatus} is "GAMESTATUS_STARTED":
+			game_playerLoadout_playerLoadoutInventory({_player}, {_loadoutID})
+			if {_loadoutType} is "PRIMARY_WEAPON":
+				set {_inventorySlot} to 0
+			else:
+				set {_inventorySlot} to 1
+			set current hotbar slot of {_player} to {_inventorySlot}
+			wait 5 ticks
+			game_reloadCaculation_startReload({_player}, {_loadoutValue}, game_itemsHandler_getGunData(slot {_inventorySlot} of {_player}'s inventory))
+	game_playerLoadout_openLoadout({_player})
+
+function game_playerLoadout_displayWeapon(player: player, loadoutID: text, formatSlot: number, displayWeapon: item, weaponCategory: text, weaponClass: text):
+	set {_playerLoadoutID} to "%{_player}'s UUID%.%{_loadoutID}%"
+	if {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_weaponCategory}%_WEAPON_ID} is game_itemsHandler_getGunID({_displayWeapon}):
+		format a gui slot {_formatSlot} of {_player} with glowing {_displayWeapon} to do nothing
+	else if game_playerLoadout_checkPlayerWeaponUnlocked({_player}, {_weaponClass}, game_itemsHandler_getGunID({_displayWeapon})) is true:
+		format a gui slot {_formatSlot} of {_player} with {_displayWeapon} to close then run function game_playerLoadout_loadoutSelect({_player}, {_loadoutID}, "%{_weaponCategory}%_WEAPON", game_itemsHandler_getGunID({_displayWeapon}), game_itemsHandler_getGunType({_displayWeapon}))
+	else:
+		set {_weaponID} to game_itemsHandler_getGunID({_displayWeapon})
+		set {_creditsCost} to game_playerLoadout_getPlayerUnlockWeaponCost({_player}, {_weaponClass}, {_weaponID})
+		set {_lockedWeapon} to (red stained glass named "&c&lLOCKED &f%{_displayWeapon}'s name%" with lore "&f||&cUnlock this weapon by||&creaching &6Level %game_gameData_getWeaponUnlockLevel({_weaponClass}, {_weaponID})% &cor &6%{_creditsCost}% Credits&c!||&f||&eLeft-Click to unlock with credits||&f||%{_displayWeapon}'s lore%")
+		format a gui slot {_formatSlot} of {_player} with {_lockedWeapon} to close then run function game_playerLoadout_openLoadout_itemPurchase({_player}, ({_displayWeapon}'s name), {_weaponID}, {_creditsCost})
+
+function game_playerLoadout_loadoutDefault(player: player, loadoutID: text):
+	set {_playerLoadoutID} to "%{_player}'s UUID%.%{_loadoutID}%"
+	set {_weaponCategories::*} to game_gameData_getWeaponCategories()
+	set {-playerLoadout::%{_playerLoadoutID}%::SELECTED_CATEGORY} to (check [{-playerLoadout::%{_playerLoadoutID}%::SELECTED_CATEGORY} is set] ? {-playerLoadout::%{_playerLoadoutID}%::SELECTED_CATEGORY} : game_playerLoadout_convertID({_weaponCategories::1}))
+	set {_weaponClasses::*} to game_gameData_getWeaponClasses({-playerLoadout::%{_playerLoadoutID}%::SELECTED_CATEGORY})
+	set {-playerLoadout::%{_playerLoadoutID}%::SELECTED_CLASS} to (check [{-playerLoadout::%{_playerLoadoutID}%::SELECTED_CLASS} is set] ? {-playerLoadout::%{_playerLoadoutID}%::SELECTED_CLASS} : game_playerLoadout_convertID({_weaponClasses::1}))
+	loop (amount of {_weaponCategories::*}) times:
+		set {_loopCategory} to game_playerLoadout_convertID({_weaponCategories::%loop-number%})
+		set {_loopCategoryClasses::*} to game_gameData_getWeaponClasses(game_playerLoadout_convertID({_loopCategory}))
+		set {_loopCategoryClassWeapons::*} to game_gameData_getWeaponsInClass(game_playerLoadout_convertID({_loopCategoryClasses::1}))
+		set {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loopCategory}%_WEAPON_CLASS} to (check [{-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loopCategory}%_WEAPON_CLASS} is set] ? {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loopCategory}%_WEAPON_CLASS} : game_playerLoadout_convertID({_loopCategoryClasses::1}))
+		set {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loopCategory}%_WEAPON_ID} to (check [{-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loopCategory}%_WEAPON_ID} is set] ? {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loopCategory}%_WEAPON_ID} : game_itemsHandler_getGunID({_loopCategoryClassWeapons::1}))
+
+function game_playerLoadout_playerLoadoutInventory(player: player, loadoutID: text = "LOADOUT_1"):
+	game_playerLoadout_loadoutDefault({_player}, {_loadoutID})
+	clear {_player}'s inventory
+	set {_loopSlots::*} to "PRIMARY" and "SECONDARY"
+	loop 2 times:
+		set {_loopSlot} to (loop-number - 1)
+		game_playerLoadout_playerLoadoutInventory_specific({_player}, {_loopSlot}, {_loadoutID})
+	set slot 2 of {_player}'s inventory to iron sword named "&aKnife" with lore "&7&oMelee||&f||&7&oAn American bayonet knife,||&7&ouseful against close range||&7&oenemies.||&f||&e60 Damage||&e1.7 Backstab Multiplier"
+	set slot 3 of {_player}'s inventory to ("Talia" parsed as offline player)'s skull named "&aGrenade" with lore "&7&oGrenade"
+	game_gameTeams_playerGetTeamArmor({_player})
+
+function game_playerLoadout_playerLoadoutInventory_specific(player: player, inventorySlot: number, loadoutID: text = "LOADOUT_1"):
+	set {_categories::*} to "PRIMARY" and "SECONDARY"
+	set {_weaponCategoryNumber} to ({_inventorySlot} + 1)
+	set {_weaponItem} to game_playerLoadout_getSelectedWeapon({_player}, {_loadoutID}, {_categories::%{_weaponCategoryNumber}%})
+	set {_weaponData::*} to game_itemsHandler_getGunData({_weaponItem})
+	set {_weaponCurrentAmmo} to game_ammoCaculation_checkAmmo({_player}, game_itemsHandler_getGunID({_weaponItem}))
+	set slot {_inventorySlot} of {_player}'s inventory to {_weaponItem}
+	game_playerDisplay_gunItem({_player}, {_inventorySlot})
+	game_playerDisplay_weaponDurability({_player}, {_inventorySlot}, ({_weaponCurrentAmmo} / {_weaponData::10} * 100))
+
+function game_playerLoadout_getSelectedWeapon(player: player, loadoutID: text, loadoutCategory: text) :: item:
+	set {_playerLoadoutID} to "%{_player}'s UUID%.%{_loadoutID}%"
+	set {_weaponClass} to {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loadoutCategory}%_WEAPON_CLASS}
+	set {_weaponID} to {-playerLoadout::%{_playerLoadoutID}%::SELECTED_%{_loadoutCategory}%_WEAPON_ID}
+	set {_weaponItem} to game_playerLoadout_getWeaponWithID({_weaponClass}, {_weaponID})
+	if {_weaponItem} is set:
+		return {_weaponItem}
+	return game_playerLoadout_getWeaponWithID("OTHER", {_weaponID})
+
+function game_playerLoadout_getWeaponWithID(weaponClass: text, weaponID: text) :: item:
+	set {_loopNumberID} to 0
+	while (true):
+		add 1 to {_loopNumberID}
+		set {_loopWeapon} to {-gameSystem::gameWeapons::WEAPON_%{_weaponClass}%_%{_loopNumberID}%}
+		if {_loopWeapon} is not set:
+			exit 1 loop
+		if game_itemsHandler_getGunID({_loopWeapon}) is {_weaponID}:
+			return {_loopWeapon}
+		delete {_loopWeapon}
+
+function game_playerLoadout_checkPlayerWeaponUnlocked(player: player, weaponClass: text, weaponID: text) :: boolean:
+	if game_gameData_getWeaponUnlockLevel({_weaponClass}, {_weaponID}) <= {-playerLoadedData::%{_player}%_CURRENT_LEVEL}:
+		return true
+	else if {-playerLoadedData::%{_player}%_SHOP_PURCHASE::%{_weaponID}%} is set:
+		return true
+	return false
+
+function game_playerLoadout_getPlayerUnlockWeaponCost(player: player, weaponClass: text, weaponID: text) :: number:
+	return ((game_gameData_getWeaponUnlockLevel({_weaponClass}, {_weaponID}) - {-playerLoadedData::%{_player}%_CURRENT_LEVEL}) * 450 + 1000)
+
+function game_playerLoadout_convertID(text: text) :: text:
+	set {_text} to {_text} in upper case
+	replace all " " with "_" in {_text}
+	return {_text}

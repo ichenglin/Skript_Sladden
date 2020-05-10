@@ -1,0 +1,19 @@
+every 20 ticks:
+	set {-tpsHandler::lastTpsCheckTime} to (check [{-tpsHandler::lastTpsCheckTime} is set] ? {-tpsHandler::lastTpsCheckTime} : now)
+	set {_secondsUsed} to "%(difference between {-tpsHandler::lastTpsCheckTime} and now)%"
+	set {-tpsHandler::lastTpsCheckTime} to now
+	set {_secondsSplit::*} to {_secondsUsed} split by " "
+	set {_secondsUsed} to ({_secondsSplit::1} parsed as number)
+	set {_tps} to (20 / {_secondsUsed})
+	if {_tps} <= 19:
+		if {-tpsHandler::lagStatus} is "EXPERIENCING_LAG":
+			stop
+		set {-tpsHandler::lagStatus} to "EXPERIENCING_LAG"
+		set {-tpsHandler::lagDetectedTime} to now
+		game_gameLogs_sendMessage("Server is currently experiencing server lag! (TPS: %{_tps}%)")
+	else:
+		if {-tpsHandler::lagStatus} is "LAG_NOT_DETECTED":
+			stop
+		set {-tpsHandler::lagStatus} to "LAG_NOT_DETECTED"
+		if {-tpsHandler::lagDetectedTime} is set:
+			game_gameLogs_sendMessage("Server lag has been cleared! (Server lag last %difference between {-tpsHandler::lagDetectedTime} and now%)")

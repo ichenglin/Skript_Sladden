@@ -1,0 +1,104 @@
+function game_playerDataHandler_loadPlayerData(player: player):
+	if {playerSavedData::%{_player}%} is not set:
+		set {_totalExp} to 0
+		set {_currentLevel} to 0
+		set {_totalCredits} to 0
+		set {_usedCredits} to 0
+		set {_playerKills} to 0
+		set {_playerDeaths} to 0
+		set {_shopPurchase} to ""
+	else:
+		set {_totalExp} to (myApi_stringDataHandler_getData({playerSavedData::%{_player}%}, "TOTAL_EXP") parsed as number)
+		set {_currentLevel} to (myApi_stringDataHandler_getData({playerSavedData::%{_player}%}, "CURRENT_LEVEL") parsed as number)
+		set {_totalCredits} to (myApi_stringDataHandler_getData({playerSavedData::%{_player}%}, "TOTAL_CREDITS") parsed as number)
+		set {_usedCredits} to (myApi_stringDataHandler_getData({playerSavedData::%{_player}%}, "USED_CREDITS") parsed as number)
+		set {_playerKills} to (myApi_stringDataHandler_getData({playerSavedData::%{_player}%}, "PLAYER_KILLS") parsed as number)
+		set {_playerDeaths} to (myApi_stringDataHandler_getData({playerSavedData::%{_player}%}, "PLAYER_DEATHS") parsed as number)
+		set {_shopPurchase} to myApi_stringDataHandler_getData({playerSavedData::%{_player}%}, "SHOP_PURCHASE")
+	set {-playerLoadedData::%{_player}%_TOTAL_EXP} to {_totalExp}
+	set {-playerLoadedData::%{_player}%_CURRENT_LEVEL} to {_currentLevel}
+	set {-playerLoadedData::%{_player}%_TOTAL_CREDITS} to {_totalCredits}
+	set {-playerLoadedData::%{_player}%_USED_CREDITS} to {_usedCredits}
+	set {-playerLoadedData::%{_player}%_REMAIN_CREDITS} to ({_totalCredits} - {_usedCredits})
+	set {-playerLoadedData::%{_player}%_PLAYER_KILLS} to {_playerKills}
+	set {-playerLoadedData::%{_player}%_PLAYER_DEATHS} to {_playerDeaths}
+	game_playerDataHandler_loadPlayerData_updatePlayerLevelDetail({_player})
+	# Remain credits are saved to improve performance on sidebar display.
+	delete {-playerLoadedData::%{_player}%_SHOP_PURCHASE::*}
+	if {_shopPurchase} is not "":
+		set {_shopPurchaseSplit::*} to {_shopPurchase} split by ":"
+		loop {_shopPurchaseSplit::*}:
+			set {-playerLoadedData::%{_player}%_SHOP_PURCHASE::%{_shopPurchaseSplit::%loop-index%}%} to true
+	game_gameLogs_sendMessage("Loaded user data for player %{_player}%.")
+
+function game_playerDataHandler_savePlayerData(player: player):
+	set {_rawPlayerData} to myApi_stringDataHandler_setData("TOTAL_EXP", "%{-playerLoadedData::%{_player}%_TOTAL_EXP}%")
+	set {_rawPlayerData} to myApi_stringDataHandler_setData("CURRENT_LEVEL", "%{-playerLoadedData::%{_player}%_CURRENT_LEVEL}%", {_rawPlayerData})
+	set {_rawPlayerData} to myApi_stringDataHandler_setData("TOTAL_CREDITS", "%{-playerLoadedData::%{_player}%_TOTAL_CREDITS}%", {_rawPlayerData})
+	set {_rawPlayerData} to myApi_stringDataHandler_setData("USED_CREDITS", "%{-playerLoadedData::%{_player}%_USED_CREDITS}%", {_rawPlayerData})
+	set {_rawPlayerData} to myApi_stringDataHandler_setData("PLAYER_KILLS", "%{-playerLoadedData::%{_player}%_PLAYER_KILLS}%", {_rawPlayerData})
+	set {_rawPlayerData} to myApi_stringDataHandler_setData("PLAYER_DEATHS", "%{-playerLoadedData::%{_player}%_PLAYER_DEATHS}%", {_rawPlayerData})
+	set {_shopPurchaseRaw} to ""
+	if (amount of {-playerLoadedData::%{_player}%_SHOP_PURCHASE::*}) > 0:
+		loop {-playerLoadedData::%{_player}%_SHOP_PURCHASE::*}:
+			if {_shopPurchaseRaw} is "":
+				set {_shopPurchaseRaw} to loop-index
+			else:
+				set {_shopPurchaseRaw} to "%{_shopPurchaseRaw}%:%loop-index%"
+	set {_rawPlayerData} to myApi_stringDataHandler_setData("SHOP_PURCHASE", {_shopPurchaseRaw}, {_rawPlayerData})
+	set {playerSavedData::%{_player}%} to {_rawPlayerData}
+	game_gameLogs_sendMessage("Saved user data for player %{_player}%.")
+
+function game_playerDataHandler_removePlayerData(player: player):
+	loop {-playerLoadedData::*}:
+		set {_indexSplit::*} to loop-index split by "_"
+		if {_indexSplit::1} is ({_player}'s UUID):
+			delete {-playerLoadedData::%loop-index%}
+	delete {playerSavedData::%{_player}%}
+
+function game_playerDataHandler_loadPlayerData_editPlayerExp(player: player, amount: number, reason: text):
+	add {_amount} to {-playerLoadedData::%{_player}%_TOTAL_EXP}
+	if {_amount} >= 0:
+		send "&6+%{_amount}% EXP (%{_reason}%)" to {_player}
+	else:
+		send "&c-%abs({_amount})% EXP (%{_reason}%)" to {_player}
+	game_playerDataHandler_loadPlayerData_updatePlayerLevelDetail({_player})
+
+function game_playerDataHandler_loadPlayerData_editPlayerCredits(player: player, amount: number, reason: text):
+	add {_amount} to {-playerLoadedData::%{_player}%_TOTAL_CREDITS}
+	if {_amount} >= 0:
+		send "&b+%{_amount}% Credits (%{_reason}%)" to {_player}
+	else:
+		send "&c-%abs({_amount})% Credits (%{_reason}%)" to {_player}
+	game_playerDataHandler_loadPlayerData_updatePlayerCreditsDetail({_player})
+
+function game_playerDataHandler_loadPlayerData_playerUseCredits(player: player, amount: number, reason: text):
+	add {_amount} to {-playerLoadedData::%{_player}%_USED_CREDITS}
+	send "&c-%{_amount}% Credits (%{_reason}%)" to {_player}
+	game_playerDataHandler_loadPlayerData_updatePlayerCreditsDetail({_player})
+
+function game_playerDataHandler_loadPlayerData_updatePlayerLevelDetail(player: player):
+	while (true):
+		set {-playerLoadedData::%{_player}%_LEVEL_UP_REQUIRE_EXP} to game_playerDataHandler_loadPlayerData_caculateLevelUpRequireExp({-playerLoadedData::%{_player}%_CURRENT_LEVEL})
+		set {-playerLoadedData::%{_player}%_LEVEL_UP_PROGRESS_EXP} to ({-playerLoadedData::%{_player}%_TOTAL_EXP} - game_playerDataHandler_loadPlayerData_caculateLevelUpProgressExp(({-playerLoadedData::%{_player}%_CURRENT_LEVEL} - 1)))
+		if {-playerLoadedData::%{_player}%_LEVEL_UP_PROGRESS_EXP} >= {-playerLoadedData::%{_player}%_LEVEL_UP_REQUIRE_EXP}:
+			game_playerDataHandler_loadPlayerData_playerLevelUp({_player})
+		else:
+			set {-playerLoadedData::%{_player}%_LEVEL_UP_PROGRESS_PERCENTAGE} to floor({-playerLoadedData::%{_player}%_LEVEL_UP_PROGRESS_EXP} / {-playerLoadedData::%{_player}%_LEVEL_UP_REQUIRE_EXP} * 100)
+			stop
+
+function game_playerDataHandler_loadPlayerData_updatePlayerCreditsDetail(player: player):
+	set {-playerLoadedData::%{_player}%_REMAIN_CREDITS} to ({-playerLoadedData::%{_player}%_TOTAL_CREDITS} - {-playerLoadedData::%{_player}%_USED_CREDITS})
+
+function game_playerDataHandler_loadPlayerData_playerLevelUp(player: player):
+	add 1 to {-playerLoadedData::%{_player}%_CURRENT_LEVEL}
+	set {_rewardCredits} to (145 + ({-playerLoadedData::%{_player}%_CURRENT_LEVEL} * 5))
+	send "&f%nl%&6&lLEVEL UP! &eYou are now level &6%{-playerLoadedData::%{_player}%_CURRENT_LEVEL}%&e!%nl%&f" to {_player}
+	game_playerDataHandler_loadPlayerData_editPlayerCredits({_player}, {_rewardCredits}, "Level Up")
+	game_playerDisplay_updateTablist({_player})
+
+function game_playerDataHandler_loadPlayerData_caculateLevelUpRequireExp(level: number) :: number:
+	return (500 + ({_level} * 700))
+
+function game_playerDataHandler_loadPlayerData_caculateLevelUpProgressExp(level: number) :: number:
+	return ((({_level} + 1) * 500) + (({_level} + 1) * {_level} * 700 / 2))

@@ -1,0 +1,249 @@
+every 1 second:
+	loop all players:
+		set {_playerTool} to loop-player's tool
+		set {_gunID} to game_itemsHandler_getGunID({_playerTool})
+		set {_gunData::*} to game_itemsHandler_getGunData({_playerTool})
+		game_playerDisplay_firingAmmo(loop-player, {_gunID}, ({_playerTool}'s name), {_gunData::*})
+		delete {_playerTool} and {_gunID} and {_gunData::*}
+	game_playerDisplay_sidebarDisplay_updateSidebarAll()
+
+every 1 minute:
+	loop all players:
+		game_playerDataHandler_savePlayerData(loop-player)
+
+on join:
+	set join message to "&2&lJOIN! &a%player%"
+	wait 5 ticks
+	game_playerDataHandler_loadPlayerData(player)
+	game_playerDisplay_sidebarDisplay_newSidebar(player)
+	game_gameRound_playerJoin(player)
+	set player's gamemode to adventure
+
+on quit:
+	set quit message to "&4&lQUIT! &c%player%"
+	game_playerDataHandler_savePlayerData(player)
+	game_gameRound_playerLeave(player)
+
+on rightclick:
+	if player's gamemode is not creative:
+		cancel event
+	if player's tool is player head:
+		if game_grenadeCaculation_grenadeReady(player) is false:
+			stop
+		if game_ammoCaculation_checkAmmo(player, "GRENADE") <= 0:
+			stop
+		game_ammoCaculation_reduceAmmo(player, "GRENADE", 1)
+		game_grenadeCaculation_registerGrenade(player)
+		stop
+	else if player's tool is clock:
+		game_playerLoadout_openLoadout(player)
+	game_eventHandler_rightButtonEvent(player)
+
+on leftclick:
+	if player's gamemode is not creative:
+		cancel event
+	game_eventHandler_leftButtonEvent(player)
+
+on damage:
+	cancel event
+	set damage delay of victim to 0 ticks
+	if attacker or victim is not set:
+		stop
+	set {_attackWeapon} to (attacker's tool)
+	if {_attackWeapon} is a iron sword:
+		game_meleeCaculation_playerAttack(attacker, victim)
+	else:
+		game_eventHandler_leftButtonEvent(attacker)
+	
+
+on swap hand items:
+	cancel event
+	set {_playerTool} to player's tool
+	set {_gunID} to game_itemsHandler_getGunID({_playerTool})
+	set {_gunStats::*} to game_itemsHandler_getGunData({_playerTool})
+	if {_gunStats::1} is not set:
+		stop
+	if game_itemsHandler_getGunType({_playerTool}) is "MELEE":
+		stop
+	if game_reloadCaculation_isReloading(player) is true:
+		stop
+	game_reloadCaculation_startReload(player, {_gunID}, {_gunStats::*})
+
+on tool change:
+	wait 1 tick
+	set {_playerTool} to player's tool
+	set {_gunID} to game_itemsHandler_getGunID({_playerTool})
+	set {_gunData::*} to game_itemsHandler_getGunData({_playerTool})
+	game_playerDisplay_firingAmmo(player, {_gunID}, ({_playerTool}'s name), {_gunData::*})
+	game_movementSpeedHandler_updatePlayerMovementSpeed(player)
+
+on chat:
+	set chat format to "%game_gameTeams_getTeamColor(game_gameTeams_getPlayerTeam(player), ""NAME"")%[%{-playerLoadedData::%player%_CURRENT_LEVEL}%] %player% %game_playerDisplay_getPlayerPrefix(player)%&f%message%"
+
+on drop:
+	cancel event
+	wait 1 tick
+	game_playerLoadout_playerLoadoutInventory(player)
+
+on hunger meter change:
+	cancel event
+
+on heal:
+	cancel event
+
+on inventory click:
+	cancel event
+
+command /game [<text>]:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou dont have permission to use this command!" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /game <join/leave>" to executor
+			stop
+		if arg 1 is not "JOIN" or "LEAVE":
+			send "&cUsage: /game <join/leave>" to executor
+			stop
+		if arg 1 is "JOIN":
+			if game_gameRound_checkPlayerInGame(executor) is true:
+				send "&cYou are already in the game!" to executor
+				stop
+			game_gameRound_playerJoin(executor)
+		else if arg 1 is "LEAVE":
+			if game_gameRound_checkPlayerInGame(executor) is false:
+				send "&cYou are not in the game!" to executor
+				stop
+			game_gameRound_playerLeave(executor)
+
+command /map [<text>]:
+	trigger:
+		if executor doesn't have permission "server.administrator":
+			send "&cYou dont have permission to use this command!" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /map <map>" to executor
+			stop
+		if {-gameSystem::gameStatus} is "GAMESTATUS_STARTED":
+			send "&cThe game has already started!" to executor
+			stop
+		set {_mapAmount} to {-gameSystem::gameMaps::TOTAL}
+		loop {_mapAmount} times:
+			if {-gameSystem::gameMapName::%loop-number%} is arg 1:
+				set {_selectedMapID} to loop-number
+				exit 1 loop
+		if {_selectedMapID} is not set:
+			send "&cMap not found with name %arg 1%!" to executor
+			stop
+		set {-gameSystem::gameMap} to "%{_selectedMapID}%"
+		send "&f%nl%&c&lNOTE: &cAn administrator has set the game map for this round to %{-gameSystem::gameMapName::%{_selectedMapID}%}%!%nl%&f" to all players
+
+command /loadout:
+	trigger:
+		game_playerLoadout_openLoadout(executor)
+
+command /exp [<offline player>] [<number>] [<text>]:
+	trigger:
+		if executor is not a op:
+			send "&cYou dont have permission to use this command!" to executor
+			stop
+		if arg 1 or arg 2 or arg 3 is not set:
+			send "&cUsage: /exp <player> <amount> <reason>" to executor
+			stop
+		if arg 1 is not online:
+			send "&cTargeted player is not online!" to executor
+			stop
+		game_playerDataHandler_loadPlayerData_editPlayerExp((arg 1), (arg 2), (arg 3))
+		send "&aSuccessfully changed %arg 1%'s exp by %arg 2% for reason ""%arg 3%""!" to executor
+
+command /credits [<offline player>] [<number>] [<text>]:
+	trigger:
+		if executor is not a op:
+			send "&cYou dont have permission to use this command!" to executor
+			stop
+		if arg 1 or arg 2 or arg 3 is not set:
+			send "&cUsage: /credits <player> <amount> <reason>" to executor
+			stop
+		if arg 1 is not online:
+			send "&cTargeted player is not online!" to executor
+			stop
+		game_playerDataHandler_loadPlayerData_editPlayerCredits((arg 1), (arg 2), (arg 3))
+		send "&aSuccessfully changed %arg 1%'s credits by %arg 2% for reason ""%arg 3%""!" to executor
+
+command /level [<offline player>] [<number>]:
+	trigger:
+		if executor is not a op:
+			send "&cYou dont have permission to use this command!" to executor
+			stop
+		if arg 1 or arg 2 is not set:
+			send "&cUsage: /level <player> <level>" to executor
+			stop
+		if arg 1 is not online:
+			send "&cTargeted player is not online!" to executor
+			stop
+		if arg 2 < 0:
+			send "&cYou can't enter a level under 0!" to executor
+			stop
+		set {_level} to floor(arg 2)
+		set {-playerLoadedData::%arg 1%_CURRENT_LEVEL} to {_level}
+		set {-playerLoadedData::%arg 1%_TOTAL_EXP} to game_playerDataHandler_loadPlayerData_caculateLevelUpProgressExp({_level} - 1)
+		game_playerDataHandler_loadPlayerData_updatePlayerLevelDetail(arg 1)
+		game_playerDisplay_updateTablist(arg 1)
+		send "&aYou have successfully set %arg 1%'s level to %{_level}%!" to executor
+
+command /resetPlayerData [<offline player>]:
+	trigger:
+		if executor is not a op:
+			send "&cYou dont have permission to use this command!" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /resetPlayerData: <player>" to executor
+			stop
+		if arg 1 is not online:
+			send "&cTargeted player is not online!" to executor
+			stop
+		game_playerDataHandler_removePlayerData(arg 1)
+		game_playerDataHandler_loadPlayerData(arg 1)
+		game_playerDisplay_updateTablist(arg 1)
+		send "&aYou have successfully removed %arg 1%'s data!" to executor
+		send "&f%nl%&c&lWARNING: &cYour game data has been reset, please contact an administrator if you believe this is in error!%nl%&f" to (arg 1)
+
+command /refillAmmo:
+	trigger:
+		if executor is not a op:
+			send "&cYou dont have permission to use this command!" to executor
+			stop
+		game_ammoCaculation_refillAmmo(executor, game_itemsHandler_getGunID(executor's tool), game_itemsHandler_getGunData(executor's tool))
+		send "&aSuccessfully refilled ammo!" to executor
+
+command /restartRound:
+	trigger:
+		if executor is not a op:
+			send "&cYou dont have permission to use this command!" to executor
+			stop
+		game_gameRound_gameEnd()
+		send "&aYou have successfully stopped the game!" to executor
+
+function game_eventHandler_leftButtonEvent(player: player):
+	if game_reloadCaculation_isReloading({_player}) is true:
+		stop
+	set {_playerTool} to {_player}'s tool
+	set {_gunID} to game_itemsHandler_getGunID({_playerTool})
+	set {_gunData::*} to game_itemsHandler_getGunData({_playerTool})
+	if {_gunData::12} is "SEMI":
+		game_buttonPressHandler_leftButtonPress({_player}, {_gunID}, {_gunData::*}, "SEMI_FIRING")
+	else if {_gunData::12} is "BURST":
+		game_buttonPressHandler_leftButtonPress({_player}, {_gunID}, {_gunData::*}, "BURST_FIRING")
+
+function game_eventHandler_rightButtonEvent(player: player):
+	if game_reloadCaculation_isReloading({_player}) is true:
+		stop
+	set {_playerTool} to {_player}'s tool
+	set {_gunID} to game_itemsHandler_getGunID({_playerTool})
+	set {_gunData::*} to game_itemsHandler_getGunData({_playerTool})
+	if {_gunData::*} is not set:
+		stop
+	if {_gunData::12} is "AUTO":
+		game_buttonPressHandler_rightButtonPress({_player}, {_gunID}, {_gunData::*}, "AUTO_FIRING")
+	else if {_gunData::12} is "SEMI" or "BURST":
+		game_buttonPressHandler_rightButtonPress({_player}, {_gunID}, {_gunData::*}, "USE_SCOPE")

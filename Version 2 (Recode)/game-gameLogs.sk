@@ -1,0 +1,2 @@
+function game_gameLogs_sendMessage(message: text):
+#	send "&c[%now%] %{_message}%" to all players where [player input has permission "server.log"]
