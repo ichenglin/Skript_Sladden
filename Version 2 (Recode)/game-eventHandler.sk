@@ -142,6 +142,26 @@ command /loadout:
 	trigger:
 		game_playerLoadout_openLoadout(executor)
 
+command /info [<offline player>]:
+	trigger:
+		if arg 1 is not set:
+			send "&cUsage: /info <player>" to executor
+			stop
+		if {playerSavedData::%arg 1%} is not set:
+			send "&cNo data found for %arg 1%!" to executor
+			stop
+		if arg 1 is online:
+			game_playerDataHandler_savePlayerData(arg 1)
+		set {_playerKills} to (myApi_stringDataHandler_getData({playerSavedData::%arg 1%}, "PLAYER_KILLS") parsed as number)
+		set {_playerDeaths} to (myApi_stringDataHandler_getData({playerSavedData::%arg 1%}, "PLAYER_DEATHS") parsed as number)
+		set {_playerKdr} to ({_playerKills} / {_playerDeaths})
+		set {_playerLevel} to (myApi_stringDataHandler_getData({playerSavedData::%arg 1%}, "CURRENT_LEVEL") parsed as number)
+		set {_playerExp} to (myApi_stringDataHandler_getData({playerSavedData::%arg 1%}, "TOTAL_EXP") parsed as number)
+		set {_totalCredits} to (myApi_stringDataHandler_getData({playerSavedData::%arg 1%}, "TOTAL_CREDITS") parsed as number)
+		set {_usedCredits} to (myApi_stringDataHandler_getData({playerSavedData::%arg 1%}, "USED_CREDITS") parsed as number)
+		set {_remainCredits} to ({_totalCredits} - {_usedCredits})
+		send "&f%nl%&e[Player Information]%nl%&ePlayer: &f%arg 1%%nl%&eLevel: &f%{_playerLevel}% &e(EXP: &f%{_playerExp}%&e)%nl%&eCredits: &f%{_remainCredits}%%nl%%nl%&eKills: &f%{_playerKills}%%nl%&eDeaths: &f%{_playerDeaths}%%nl%&eKDR: &f%{_playerKdr}%%nl%&f" to executor
+
 command /exp [<offline player>] [<number>] [<text>]:
 	trigger:
 		if executor is not a op:
