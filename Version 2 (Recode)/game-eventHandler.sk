@@ -92,6 +92,8 @@ on heal:
 	cancel event
 
 on inventory click:
+	if player's gamemode is creative:
+		stop
 	cancel event
 
 command /game [<text>]:
