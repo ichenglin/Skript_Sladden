@@ -102,6 +102,7 @@ function game_playerLoadout_playerLoadoutInventory(player: player, loadoutID: te
 		game_playerLoadout_playerLoadoutInventory_specific({_player}, {_loopSlot}, {_loadoutID})
 	set slot 2 of {_player}'s inventory to iron sword named "&aKnife" with lore "&7&oMelee||&f||&7&oAn American bayonet knife,||&7&ouseful against close range||&7&oenemies.||&f||&e60 Damage||&e1.7 Backstab Multiplier"
 	set slot 3 of {_player}'s inventory to ("Talia" parsed as offline player)'s skull named "&aGrenade" with lore "&7&oGrenade"
+	set slot 8 of {_player}'s inventory to clock named "&aLoadout" with lore "&7&oPlayer loadout selector"
 	game_gameTeams_playerGetTeamArmor({_player})
 
 function game_playerLoadout_playerLoadoutInventory_specific(player: player, inventorySlot: number, loadoutID: text = "LOADOUT_1"):
