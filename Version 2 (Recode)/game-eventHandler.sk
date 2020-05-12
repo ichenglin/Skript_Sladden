@@ -84,6 +84,16 @@ on drop:
 	cancel event
 	wait 1 tick
 	game_playerLoadout_playerLoadoutInventory(player)
+	set {_playerTool} to player's tool
+	set {_gunID} to game_itemsHandler_getGunID({_playerTool})
+	set {_gunStats::*} to game_itemsHandler_getGunData({_playerTool})
+	if {_gunStats::1} is not set:
+		stop
+	if game_itemsHandler_getGunType({_playerTool}) is "MELEE":
+		stop
+	if game_reloadCaculation_isReloading(player) is true:
+		stop
+	game_reloadCaculation_startReload(player, {_gunID}, {_gunStats::*})
 
 on hunger meter change:
 	cancel event
