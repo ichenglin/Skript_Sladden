@@ -1,0 +1,49 @@
+# [GUN NAME]	
+# [GUN CLASS]
+
+# [DESCRIPTION]
+
+# [NUMBER] Damage
+# [NUMBER] Headshot Multiplier
+# [NUMBER] Range
+# [NUMBER] Pellets
+# [NUMBER] Burst
+# [NUMBER] Accuracy
+# [NUMBER] Firerate
+# [NUMBER] Reload Time
+# [TEXT] Reload Sound
+# [NUMBER] Magazine Size
+# [NUMBER] Walk Speed
+# [TEXT] Fire Mode
+
+function game_itemsHandler_getGunData(gunItem: item) :: objects:
+	set {_gunDataRaw} to {_gunItem}'s lore
+	set {_gunDataSplit::*} to {_gunDataRaw} split by "||"
+	set {_dataReadIndex} to 0
+	loop {_gunDataSplit::*}:
+		if {_gunDataSplit::%loop-index%} contains "&e":
+			add 1 to {_dataReadIndex}
+			set {_loopGunData} to uncolored {_gunDataSplit::%loop-index%}
+			set {_loopGunDataSplit::*} to {_loopGunData} split by " "
+			if {_dataReadIndex} is not 9 or 12:
+				set {_loopGunDataValue} to ({_loopGunDataSplit::1} parsed as number)
+			else:
+				set {_loopGunDataValue} to {_loopGunDataSplit::1} in upper case
+			if {_loopGunDataValue} is set:
+				add {_loopGunDataValue} to {_returnData::*}
+			else:
+				add {_loopGunDataSplit::1} to {_returnData::*}
+			delete {_loopGunDataValue}
+	return {_returnData::*}
+
+function game_itemsHandler_getGunType(gunItem: item) :: text:
+	set {_gunDataRaw} to uncolored {_gunItem}'s lore
+	set {_gunDataSplit::*} to {_gunDataRaw} split by "||"
+	set {_gunType} to {_gunDataSplit::1} in upper case
+	replace all " " with "_" in {_gunType}
+	return {_gunType}
+
+function game_itemsHandler_getGunID(gunItem: item) :: text:
+	set {_gunIDRaw} to uncolored {_gunItem}'s name in upper case
+	replace all " " with "_" in {_gunIDRaw}
+	return {_gunIDRaw}

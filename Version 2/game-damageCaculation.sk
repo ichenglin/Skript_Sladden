@@ -1,0 +1,72 @@
+function game_damageCaculation_damagePlayer(attacker: player, victim: entity, damage: number, damageCause: text = "", extraInfo: text = ""):
+	if {-gameSystem::gameMode} is "GAMEMODE_TEAMDEATHMATCH":
+		if game_gameTeams_getPlayerTeam({_attacker}) is game_gameTeams_getPlayerTeam({_victim}):
+			stop
+	game_damageCaculation_damageAnimation({_victim})
+	play sound "entity.arrow.hit_player" with volume 99999 and pitch 1 at ({_attacker}'s location) for {_attacker}
+	play sound "entity.player.hurt" with volume 99999 and pitch 2 at ({_victim}'s location) for {_victim}
+	if {_victim} is not a player:
+		stop
+	set {_newHealth} to ({-playerHealth::%{_victim}%} - {_damage})
+	if {_newHealth} <= 0:
+		game_playerDisplay_playerRewardMessage({_attacker}, "&cEnemy Killed!")
+		if {_extraInfo} is "HEADSHOT":
+			set {_extraDisplay} to " &c[Hᴇᴀᴅsʜᴏᴛ]"
+		else if {_extraInfo} is "BACKSTAB":
+			set {_extraDisplay} to " &c[ʙᴀᴄᴋsᴛᴀʙ]"
+		else:
+			set {_extraDisplay} to ""
+		if {_damageCause} is "GRENADE_DAMAGE":
+			set {_weaponDisplay} to "Grenade"
+		else:
+			set {_weaponDisplay} to uncolored ({_attacker}'s tool)'s name
+		set {_attackDistance} to (distance between {_attacker} and {_victim})
+		send "&c&lDEATH! &7%game_gameTeams_getTeamColor(game_gameTeams_getPlayerTeam({_attacker}), ""NAME"")%%{_attacker}% &e%{_weaponDisplay}% &7%game_gameTeams_getTeamColor(game_gameTeams_getPlayerTeam({_victim}), ""NAME"")%%{_victim}%&e! (%{_attackDistance}%m)%{_extraDisplay}%" to all players
+		game_damageCaculation_playerDeath({_victim}, "PLAYER_KILLED")
+		game_playerDataHandler_loadPlayerData_editPlayerExp({_attacker}, 100, "Enemy Killed")
+		if {_extraInfo} is "HEADSHOT":
+			game_playerDataHandler_loadPlayerData_editPlayerExp({_attacker}, 50, "Headshot")
+		else if {_extraInfo} is "BACKSTAB":
+			game_playerDataHandler_loadPlayerData_editPlayerExp({_attacker}, 50, "Backstab")
+		if {_attackDistance} >= 40:
+			game_playerDataHandler_loadPlayerData_editPlayerExp({_attacker}, 25, "Killed From Distance")
+		set {_attackerTeam} to game_gameTeams_getPlayerTeam({_attacker})
+		set {-gameSystem::teamKills::%{_attackerTeam}%} to (check [{-gameSystem::teamKills::%{_attackerTeam}%} is set] ? {-gameSystem::teamKills::%{_attackerTeam}%} : 0)
+		add 1 to {-playerLoadedData::%{_attacker}%_PLAYER_KILLS}
+		add 1 to {-playerLoadedData::%{_victim}%_PLAYER_DEATHS}
+		add 1 to {-gameSystem::teamKills::%{_attackerTeam}%}
+		add 1 to {-gameSystem::playerKills::%{_attacker}%}
+		add 1 to {-gameSystem::playerDeaths::%{_victim}%}
+		game_playerDisplay_sidebarDisplay_updateSidebarAll()
+		game_playerDisplay_updateTablist({_attacker})
+		game_playerDisplay_updateTablist({_victim})
+		stop
+	set {-playerHealth::%{_victim}%} to {_newHealth}
+	set {_victim}'s health to (ceil({_newHealth} / 5) / 2)
+
+function game_damageCaculation_healPlayer(player: player, healAmount: number):
+	set {-playerHealth::%{_player}%} to (check [{-playerHealth::%{_player}%} is set] ? {-playerHealth::%{_player}%} : 100)
+	set {_newHealth} to ({-playerHealth::%{_player}%} + {_healAmount})
+	set {_newHealth} to (check [{_newHealth} <= 100] ? {_newHealth} : 100)
+	set {-playerHealth::%{_player}%} to {_newHealth}
+	set {_player}'s health to 10
+
+function game_damageCaculation_playerDeath(victim: player, deathCause: text = ""):
+	game_gameRound_setupPlayer({_victim}, false)
+
+function game_damageCaculation_setInvulnerable(target: entity):
+	delete {-playerHealth::%{_target}%}
+
+function game_damageCaculation_IsVulnerable(target: entity) :: boolean:
+	return (check [{-playerHealth::%{_target}%} is set])
+
+function game_damageCaculation_damageAnimation(victim: entity):
+	loop 10 times:
+		set {_entityLocation} to {_victim}'s location
+		set {_randomX} to ((random integer between -5 and 5) / 10)
+		set {_randomY} to ((random integer between 1 and 20) / 10)
+		set {_randomZ} to ((random integer between -5 and 5) / 10)
+		set {_entityLocation}'s x coords to ({_entityLocation}'s x coords + {_randomX})
+		set {_entityLocation}'s y coords to ({_entityLocation}'s y coords + {_randomY})
+		set {_entityLocation}'s z coords to ({_entityLocation}'s z coords + {_randomZ})
+		drawDot count 10, particle blockdust, material redstone block, center {_entityLocation}, visibleRange 100
